@@ -1,30 +1,24 @@
 <script setup>
 import { ArrowLeft, Ban, Bell, BellOff, ContactRound, Menu, MessageCircle, Settings, UsersRound } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   consumeNativeRoomTarget,
   NATIVE_ROOM_OPEN_EVENT
 } from '../capacitor-platform.ts';
 import { isDemoMode } from '../runtime.js';
-import AddConversationDialog from '../components/chat/AddConversationDialog.vue';
 import ConversationList from '../components/chat/ConversationList.vue';
-import CreateGroupDialog from '../components/chat/CreateGroupDialog.vue';
-import GroupSettingsDialog from '../components/chat/GroupSettingsDialog.vue';
 import InAppNotificationStack from '../components/chat/InAppNotificationStack.vue';
-import MemberPanel from '../components/chat/MemberPanel.vue';
 import MessageAttachment from '../components/chat/MessageAttachment.vue';
 import MessageComposer from '../components/chat/MessageComposer.vue';
 import MessageMarkdown from '../components/chat/MessageMarkdown.vue';
 import MessageContextMenu from '../components/chat/MessageContextMenu.vue';
 import MessageReplyPreview from '../components/chat/MessageReplyPreview.vue';
 import PinnedMessageBar from '../components/chat/PinnedMessageBar.vue';
-import MobileNavigationDrawer from '../components/chat/MobileNavigationDrawer.vue';
 import SenderSourceBadge from '../components/chat/SenderSourceBadge.vue';
 import SenderTitleBadge from '../components/chat/SenderTitleBadge.vue';
 import RoomBridgeNotice from '../components/chat/RoomBridgeNotice.vue';
 import PublicGroupDiscovery from '../components/chat/PublicGroupDiscovery.vue';
-import PublicGroupJoinDialog from '../components/chat/PublicGroupJoinDialog.vue';
 import UiAvatar from '../components/ui/Avatar.vue';
 import LanguageSwitch from '../components/ui/LanguageSwitch.vue';
 import { useActiveRoom } from '../composables/useActiveRoom.js';
@@ -42,10 +36,22 @@ import { useUserBlock } from '../composables/useUserBlock.ts';
 import { resolveMentionUserIds } from '../mentions.ts';
 import store from '../store.js';
 import api from '../api.js';
-import UserProfileDialog from '../components/chat/UserProfileDialog.vue';
-import ContactsPage from './ContactsPage.vue';
 import { useUserProfile } from '../composables/useUserProfile.ts';
 import { useI18n } from '../i18n.js';
+
+import '../styles/chat.css';
+import '../styles/chat-messages.css';
+import '../styles/chat-attachments.css';
+import '../styles/chat-theme.css';
+
+const AddConversationDialog = defineAsyncComponent(() => import('../components/chat/AddConversationDialog.vue'));
+const CreateGroupDialog = defineAsyncComponent(() => import('../components/chat/CreateGroupDialog.vue'));
+const GroupSettingsDialog = defineAsyncComponent(() => import('../components/chat/GroupSettingsDialog.vue'));
+const MemberPanel = defineAsyncComponent(() => import('../components/chat/MemberPanel.vue'));
+const MobileNavigationDrawer = defineAsyncComponent(() => import('../components/chat/MobileNavigationDrawer.vue'));
+const PublicGroupJoinDialog = defineAsyncComponent(() => import('../components/chat/PublicGroupJoinDialog.vue'));
+const UserProfileDialog = defineAsyncComponent(() => import('../components/chat/UserProfileDialog.vue'));
+const ContactsPage = defineAsyncComponent(() => import('./ContactsPage.vue'));
 
 const router = useRouter();
 const route = useRoute();
@@ -491,6 +497,24 @@ onBeforeUnmount(() => {
   disconnectSocket();
   stopViewportSync();
 });
+// Keep dialogs mounted after first use to preserve exit transitions and focus restoration.
+const visitedOverlays = reactive(new Set());
+watch(
+  () => ({
+    mobileNavigation: showMobileNavigation.value,
+    userProfile: showUserProfile.value,
+    addConversation: showAddConversation.value,
+    createGroup: showCreateGroup.value,
+    publicGroupJoin: publicGroupPreview.value,
+    groupSettings: showGroupEditor.value,
+  }),
+  (states) => {
+    for (const [name, open] of Object.entries(states)) {
+      if (open) visitedOverlays.add(name);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -880,6 +904,7 @@ onBeforeUnmount(() => {
     </div>
 
     <MobileNavigationDrawer
+      v-if="visitedOverlays.has('mobileNavigation')"
       :show="showMobileNavigation"
       :session="session"
       :show-admin="showAdminEntry"
@@ -897,6 +922,7 @@ onBeforeUnmount(() => {
     />
 
     <UserProfileDialog
+      v-if="visitedOverlays.has('userProfile')"
       :show="showUserProfile"
       :identity="profileIdentity"
       :profile="userProfile"
@@ -912,6 +938,7 @@ onBeforeUnmount(() => {
       @edit="editProfile"
     />
     <AddConversationDialog
+      v-if="visitedOverlays.has('addConversation')"
       :show="showAddConversation"
       :users="usersWithoutDm"
       :opening-dm-user-id="openingDmUserId"
@@ -922,6 +949,7 @@ onBeforeUnmount(() => {
     />
 
     <CreateGroupDialog
+      v-if="visitedOverlays.has('createGroup')"
       :show="showCreateGroup"
       :users="users"
       :form="createGroupForm"
@@ -933,6 +961,7 @@ onBeforeUnmount(() => {
     />
 
     <PublicGroupJoinDialog
+      v-if="visitedOverlays.has('publicGroupJoin')"
       :show="Boolean(publicGroupPreview)"
       :channel="publicGroupPreview"
       :joining="joiningPublicGroup"
@@ -941,6 +970,7 @@ onBeforeUnmount(() => {
     />
 
     <GroupSettingsDialog
+      v-if="visitedOverlays.has('groupSettings')"
       :show="showGroupEditor"
       :room="activeRoom"
       :form="groupSettingsForm"

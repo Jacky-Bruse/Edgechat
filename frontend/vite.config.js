@@ -29,6 +29,16 @@ export default defineConfig({
   },
   build: {
     outDir: resolve(dirname, 'dist'),
-    emptyOutDir: true
+    emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Share the tree-shaken icon set instead of requesting one tiny chunk per icon.
+            { name: 'icons', test: /node_modules[\\/]@lucide[\\/]vue[\\/]/ }
+          ]
+        }
+      }
+    }
   }
 });

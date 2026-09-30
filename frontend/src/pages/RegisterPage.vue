@@ -6,6 +6,9 @@ import store from '../store.js';
 import { useCursor } from '../composables/useCursor.js';
 import { useI18n } from '../i18n.js';
 import LanguageSwitch from '../components/ui/LanguageSwitch.vue';
+import { loadAuthFonts } from '../auth-fonts.js';
+
+onMounted(loadAuthFonts);
 
 const route = useRoute();
 const router = useRouter();
@@ -147,7 +150,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Dancing+Script:wght@500;700&display=swap');
 
 .login-page {
   min-height: 100vh;

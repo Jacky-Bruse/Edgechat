@@ -2,17 +2,6 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
 import { isCapacitorAndroid } from './capacitor-platform.ts';
 import { isDemoMode } from './runtime.js';
 import store from './store.js';
-import LoginPage from './pages/LoginPage.vue';
-import RegisterPage from './pages/RegisterPage.vue';
-import ChatPage from './pages/ChatPage.vue';
-import AdminPage from './pages/AdminPage.vue';
-import AdminDashboardPage from './pages/AdminDashboardPage.vue';
-import AdminUsersPage from './pages/AdminUsersPage.vue';
-import AdminStoragePage from './pages/AdminStoragePage.vue';
-import AdminInvitesPage from './pages/AdminInvitesPage.vue';
-import AdminSitePage from './pages/AdminSitePage.vue';
-import AdminTelegramPage from './pages/AdminTelegramPage.vue';
-import SettingsPage from './pages/SettingsPage.vue';
 import { addAuthInvalidListener } from './auth-storage.js';
 
 const router = createRouter({
@@ -21,30 +10,30 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginPage,
+      component: () => import('./pages/LoginPage.vue'),
       meta: { public: true, transition: 'page' }
     },
     {
       path: '/register/:token',
       name: 'register',
-      component: RegisterPage,
+      component: () => import('./pages/RegisterPage.vue'),
       meta: { public: true, transition: 'page' }
     },
     {
       path: '/',
       name: 'chat',
-      component: ChatPage,
+      component: () => import('./pages/ChatPage.vue'),
       meta: { transition: 'page', workspace: true }
     },
     {
       path: '/contacts',
       name: 'contacts',
-      component: ChatPage,
+      component: () => import('./pages/ChatPage.vue'),
       meta: { transition: 'page', workspace: true }
     },
     {
       path: '/admin',
-      component: AdminPage,
+      component: () => import('./pages/AdminPage.vue'),
       meta: { admin: true, transition: 'page' },
       children: [
         {
@@ -54,31 +43,31 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'admin-dashboard',
-          component: AdminDashboardPage,
+          component: () => import('./pages/AdminDashboardPage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.dashboard', adminIcon: 'dashboard', transition: 'page' }
         },
         {
           path: 'users',
           name: 'admin-users',
-          component: AdminUsersPage,
+          component: () => import('./pages/AdminUsersPage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.users', adminIcon: 'users', transition: 'page' }
         },
         {
           path: 'storage',
           name: 'admin-storage',
-          component: AdminStoragePage,
+          component: () => import('./pages/AdminStoragePage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.storage', adminIcon: 'storage', transition: 'page' }
         },
         {
           path: 'invites',
           name: 'admin-invites',
-          component: AdminInvitesPage,
+          component: () => import('./pages/AdminInvitesPage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.invites', adminIcon: 'invites', transition: 'page' }
         },
         {
           path: 'telegram',
           name: 'admin-telegram',
-          component: AdminTelegramPage,
+          component: () => import('./pages/AdminTelegramPage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.telegram', adminIcon: 'telegram', transition: 'page' }
         },
         {
@@ -102,7 +91,7 @@ const router = createRouter({
         {
           path: 'site',
           name: 'admin-site',
-          component: AdminSitePage,
+          component: () => import('./pages/AdminSitePage.vue'),
           meta: { admin: true, adminTitleKey: 'admin.nav.site', adminIcon: 'site', transition: 'page' }
         }
       ]
@@ -110,7 +99,7 @@ const router = createRouter({
     {
       path: '/settings',
       name: 'settings',
-      component: SettingsPage,
+      component: () => import('./pages/SettingsPage.vue'),
       meta: { transition: 'page' }
     }
   ]

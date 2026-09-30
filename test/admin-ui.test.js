@@ -10,6 +10,7 @@ const routerSource = read('../frontend/src/router.js');
 const apiSource = read('../frontend/src/api.js');
 const adminApiSource = read('../worker/src/api/admin.js');
 const mainSource = read('../frontend/src/main.js');
+const adminPageSource = read('../frontend/src/pages/AdminPage.vue');
 const navigationSource = read('../frontend/src/admin/navigation.js');
 const sidebarSource = read('../frontend/src/components/admin/AdminSidebar.vue');
 const dashboardSource = read('../frontend/src/pages/AdminDashboardPage.vue');
@@ -35,8 +36,8 @@ const userCreatorStyles = read('../frontend/src/styles/admin/user-creator.css');
 const inviteManagerStyles = read('../frontend/src/styles/admin/invite-manager.css');
 
 test('后台默认进入仪表盘并新增受保护的注册邀请页', () => {
-  assert.match(routerSource, /import AdminDashboardPage/);
-  assert.match(routerSource, /import AdminInvitesPage/);
+  assert.match(routerSource, /component: \(\) => import\('\.\/pages\/AdminDashboardPage\.vue'\)/);
+  assert.match(routerSource, /component: \(\) => import\('\.\/pages\/AdminInvitesPage\.vue'\)/);
   assert.match(routerSource, /redirect: \{ name: 'admin-dashboard' \}/);
   assert.match(routerSource, /path: 'dashboard'/);
   assert.match(routerSource, /path: 'invites'/);
@@ -90,7 +91,7 @@ test('侧栏分组默认收起，主按钮导航且仅箭头负责展开', () =>
 });
 
 test('存储统计由按钮手动刷新且四个统计列均可排序', () => {
-  assert.match(routerSource, /import AdminStoragePage/);
+  assert.match(routerSource, /component: \(\) => import\('\.\/pages\/AdminStoragePage\.vue'\)/);
   assert.match(routerSource, /path: 'storage'/);
   assert.match(apiSource, /adminStorageScan/);
   assert.match(adminApiSource, /\/api\/admin\/storage\/scan/);
@@ -162,7 +163,7 @@ test('仪表盘复用现有概况接口并只展示可验证统计', () => {
 });
 
 test('Telegram 互通页由管理员路由保护并统一管理公开与私有群组映射', () => {
-  assert.match(routerSource, /import AdminTelegramPage/);
+  assert.match(routerSource, /component: \(\) => import\('\.\/pages\/AdminTelegramPage\.vue'\)/);
   assert.match(routerSource, /path: 'telegram'/);
   assert.match(routerSource, /adminTitleKey: 'admin\.nav\.telegram'/);
   assert.match(telegramSource, /api\.saveAdminTelegramConfig/);
@@ -197,7 +198,8 @@ test('管理员消息正文查看的页面、客户端调用与服务端接口�
 });
 
 test('后台视觉令牌匹配参考图并按职责拆分样式文件', () => {
-  assert.match(mainSource, /import '\.\/styles\/admin\.css';/);
+  assert.doesNotMatch(mainSource, /styles\/admin\.css/);
+  assert.match(adminPageSource, /import '\.\.\/styles\/admin\.css';/);
   assert.match(adminStyles, /@import '\.\/admin\/tokens\.css';/);
   assert.match(adminStyles, /@import '\.\/admin\/layout\.css';/);
   assert.match(adminStyles, /@import '\.\/admin\/controls\.css';/);

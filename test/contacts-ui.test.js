@@ -61,7 +61,7 @@ test("通讯录页面只渲染头像和一个名字并复用资料卡与工作�
 	assert.match(page, /min-height:\s*80px/);
 	assert.match(page, /text-overflow:\s*ellipsis/);
 	assert.match(page, /safe-area-inset-bottom/);
-	assert.match(router, /path:\s*'\/contacts'[\s\S]*component:\s*ChatPage/);
+	assert.match(router, /path:\s*'\/contacts'[\s\S]*component:\s*\(\) => import\('\.\/pages\/ChatPage\.vue'\)/);
 	assert.match(app, /route\.meta\.workspace \? 'workspace' : route\.path/);
 	assert.match(chat, /activeRoom:\s*inboxActiveRoom/);
 	assert.match(chat, /roomVisible:\s*computed\(\(\) => !isContactsView\.value\)/);
