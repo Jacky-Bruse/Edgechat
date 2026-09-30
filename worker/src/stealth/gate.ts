@@ -1,6 +1,7 @@
 import type { StealthSettings } from '../data/stealth-settings.ts';
 import { loginWithPassword } from '../login.ts';
 import { sessionCookie } from '../session-cookie.ts';
+import { renderGate } from './appearance.ts';
 
 export const privateHeaders = {
   'Cache-Control': 'private, no-store',
@@ -17,13 +18,9 @@ export function notFound() {
 }
 
 export function gatePage(settings: StealthSettings, failed = false, status = 200) {
-  const { loginPath, formId, variant } = settings;
-  const width = [320, 344, 360][variant];
-  const top = ['18vh', '24vh', '12vh'][variant];
-  // 网关刻意不引用主站资源：无 JS、Logo、manifest、字体下载或可识别的构建标记。
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign in</title><style>
-html{color-scheme:light dark;font:16px/1.5 system-ui,sans-serif}body{margin:0;padding:24px}main{max-width:${width}px;margin:${top} auto 0}h1{font-size:24px;margin:0 0 24px}form{display:grid;gap:16px}label{display:grid;gap:6px}input,button{box-sizing:border-box;width:100%;min-height:44px;font:inherit;border:1px solid GrayText;border-radius:${variant * 3}px;padding:8px 12px}button{margin-top:8px;cursor:pointer}input:focus-visible,button:focus-visible{outline:2px solid Highlight;outline-offset:3px}p{font-size:14px}
-</style></head><body><main id="${formId}"><h1>Sign in</h1><form action="${loginPath}" method="post"><label>Username<input name="username" autocomplete="username" maxlength="100" required></label><label>Password<input type="password" name="password" autocomplete="current-password" maxlength="1024" required></label><button type="submit">Sign in</button></form>${failed ? '<p role="alert">Unable to sign in. Please try again.</p>' : ''}</main></body></html>`;
+  // Settings are initialized/persisted before rendering; never generate presentation per request.
+  if (!settings.appearance) throw new Error('Missing gate appearance');
+  const html = renderGate({ ...settings, appearance: settings.appearance }, failed);
   return new Response(html, {
     status,
     headers: {
