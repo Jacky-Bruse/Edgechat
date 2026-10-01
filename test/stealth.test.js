@@ -9,6 +9,7 @@ import { getStealthSettings, saveStealthSettings } from '../worker/src/data/stea
 import { cookieRequestAllowed, cookieToken, sessionCookie } from '../worker/src/session-cookie.ts';
 import { createSiteEntry } from '../worker/src/stealth/entry.ts';
 import { gatePage } from '../worker/src/stealth/gate.ts';
+import { appearanceOptions, createGateAppearance, isGateAppearance } from '../worker/src/stealth/appearance.ts';
 import { saveTelegramBridgeConfig } from '../worker/src/data/telegram.js';
 
 const SQL = await initSqlJs();
@@ -71,7 +72,7 @@ test('未认证网关无品牌、脚本、外部资源、manifest 或构建信�
   const response = await f.request('/');
   const html = await response.text();
   assert.equal(response.status, 200);
-  assert.match(html, /<title>Sign in<\/title>/);
+  assert.match(html, /<title>(Sign in|Log in|Account access|Welcome)<\/title>/);
   assert.match(html, /<form action="\/[A-Za-z0-9_-]+" method="post">/);
   assert.doesNotMatch(html, /edgechat|cfchat|cloudflare|vite|vue|websocket|manifest|<script|<link|assets|logo/i);
   assert.equal(response.headers.get('cache-control'), 'private, no-store');
@@ -190,7 +191,7 @@ test('会话撤销、封禁或 session_version 变化后不能继续读脚本与
     const cookie = await f.cookie();
     change(f);
     assert.equal((await f.request('/assets/main.js', { headers: { cookie } })).status, 404);
-    assert.match(await (await f.request('/', { headers: { cookie } })).text(), /<title>Sign in<\/title>/);
+    assert.match(await (await f.request('/', { headers: { cookie } })).text(), /<form action=/);
   }
 });
 
@@ -213,11 +214,53 @@ test('仅管理员可切换隐身开关，随机标识跨切换稳定，不同�
   assert.ok(response.headers.get('set-cookie'));
   const disabled = await getStealthSettings(f.env.DB);
   assert.equal(disabled.loginPath, f.settings.loginPath);
+  assert.equal(disabled.enabled, false);
+  assert.deepEqual(disabled.appearance, f.settings.appearance);
   assert.equal((await saveStealthSettings(f.env.DB, true)).apiPrefix, f.settings.apiPrefix);
+  assert.deepEqual((await getStealthSettings(f.env.DB)).appearance, f.settings.appearance);
+  const originalPage = await gatePage(f.settings).text();
+  assert.equal(await gatePage(await getStealthSettings(f.env.DB)).text(), originalPage);
   const other = await fixture();
   assert.notEqual(f.settings.loginPath, other.settings.loginPath);
   assert.notEqual(f.settings.apiPrefix, other.settings.apiPrefix);
   assert.notEqual(f.settings.formId, other.settings.formId);
+  assert.notDeepEqual(f.settings.appearance, other.settings.appearance);
+});
+
+test('旧实例自动保存页面组合，保留路径与开关；并发读取采用同一持久化结果', async () => {
+  const f = await fixture();
+  const { appearance, ...legacy } = f.settings;
+  f.database.run("UPDATE site_settings SET setting_value = ? WHERE setting_key = 'stealth_mode'", [JSON.stringify(legacy)]);
+  const upgraded = await Promise.all(Array.from({ length: 8 }, () => getStealthSettings(f.env.DB)));
+  const stored = JSON.parse(f.database.exec("SELECT setting_value FROM site_settings WHERE setting_key = 'stealth_mode'")[0].values[0][0]);
+  assert.ok(isGateAppearance(stored.appearance));
+  for (const settings of upgraded) assert.deepEqual(settings, stored);
+  const { appearance: nextAppearance, ...unchanged } = stored;
+  assert.deepEqual(unchanged, legacy);
+  const html = await (await f.request('/')).text();
+  assert.equal(await (await f.request('/')).text(), html);
+  assert.equal(await gatePage(await getStealthSettings(f.env.DB)).text(), html);
+});
+
+test('同时首次配置不会生成不同的实例页面或入口', async () => {
+  const f = await fixture(false);
+  const saved = await Promise.all(Array.from({ length: 8 }, () => saveStealthSettings(f.env.DB, true)));
+  for (const settings of saved) assert.deepEqual(settings, saved[0]);
+  assert.equal(saved[0].enabled, true);
+});
+
+test('损坏或越界页面配置只修复外观，不改入口；配置不作为任意 HTML 执行', async () => {
+  const f = await fixture();
+  const invalid = { ...f.settings, appearance: { ...f.settings.appearance, layout: 99, usernameId: '"><script>' } };
+  assert.equal(isGateAppearance(invalid.appearance), false);
+  f.database.run("UPDATE site_settings SET setting_value = ? WHERE setting_key = 'stealth_mode'", [JSON.stringify(invalid)]);
+  const restored = await getStealthSettings(f.env.DB);
+  assert.ok(isGateAppearance(restored.appearance));
+  assert.equal(restored.loginPath, f.settings.loginPath);
+  assert.equal(restored.enabled, true);
+  const html = await gatePage({ ...restored, loginPath: '/"><script>', formId: '" onmouseover="bad' }).text();
+  assert.doesNotMatch(html, /<script|id="" onmouseover/);
+  assert.match(html, /&quot;/);
 });
 
 test('登出删除 KV Session 并清 Cookie，此后无法再次下载资源', async () => {
@@ -274,14 +317,34 @@ test('设置读取异常时 fail closed，不公开 SPA 或内部错误', async 
   } finally { console.error = previous; }
 });
 
-test('所有网关布局保持小体积、无脚本；生产与 CI 模板强制 Worker-first', async () => {
+test('页面模块的两两组合保持小体积、无外部资源、固定表单能力和通用错误', async () => {
   const f = await fixture();
-  for (const variant of [0, 1, 2]) {
-    const html = await gatePage({ ...f.settings, variant }).text();
-    assert.ok(Buffer.byteLength(html) < 2500);
-    assert.doesNotMatch(html, /<script|https?:\/\//);
-    assert.match(html, /autocomplete="current-password"/);
+  const entries = Object.entries(appearanceOptions);
+  const base = createGateAppearance();
+  for (let left = 0; left < entries.length; left++) {
+    for (let right = left + 1; right < entries.length; right++) {
+      const [leftKey, leftCount] = entries[left];
+      const [rightKey, rightCount] = entries[right];
+      for (let i = 0; i < leftCount; i++) for (let j = 0; j < rightCount; j++) {
+        const appearance = { ...base, [leftKey]: i, [rightKey]: j, width: 384, top: 26 };
+        const settings = { ...f.settings, appearance };
+        const html = await gatePage(settings, true, 401).text();
+        assert.ok(Buffer.byteLength(html) < 5000);
+        assert.doesNotMatch(html, /edgechat|cfchat|cloudflare|vite|vue|websocket|manifest|<script|<link|assets|logo|https?:\/\//i);
+        assert.match(html, /<form action="\/[A-Za-z0-9_-]+" method="post">/);
+        assert.match(html, /name="username" autocomplete="username" maxlength="100" required/);
+        assert.match(html, /type="password" name="password" autocomplete="current-password" maxlength="1024" required/);
+        assert.equal((html.match(/<input /g) || []).length, 2);
+        assert.equal((html.match(/type="submit"/g) || []).length, 1);
+        assert.match(html, /role="alert"/);
+        assert.equal(await gatePage(settings, true, 401).text(), html);
+        assert.doesNotMatch(await gatePage(settings).text(), /role="alert"/);
+      }
+    }
   }
+});
+
+test('生产与 CI 模板强制 Worker-first', () => {
   const config = readFileSync(new URL('../wrangler.example.toml', import.meta.url), 'utf8');
   assert.match(config, /binding = "ASSETS"/);
   assert.match(config, /run_worker_first = true/);
