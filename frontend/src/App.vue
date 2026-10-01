@@ -1,5 +1,6 @@
 <script setup>
 import { defineAsyncComponent } from 'vue';
+import ChunkLoadNotice from './components/ChunkLoadNotice.vue';
 
 const DemoNavigator = globalThis.__EDGECHAT_DEMO__
   ? defineAsyncComponent(() => import('./components/demo/DemoNavigator.vue'))
@@ -13,6 +14,7 @@ const DemoNavigator = globalThis.__EDGECHAT_DEMO__
     </Transition>
   </router-view>
   <component :is="DemoNavigator" v-if="DemoNavigator" />
+  <ChunkLoadNotice />
 </template>
 
 <style>
