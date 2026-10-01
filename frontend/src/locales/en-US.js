@@ -42,6 +42,7 @@ export default {
   'common.refresh': 'Refresh',
   'common.refreshing': 'Refreshing...',
   'common.reload': 'Reload',
+  'common.chunkLoadFailed': 'Unable to load part of the app. Check your connection, then reload. Reloading discards unsent drafts.',
   'common.loading': 'Loading',
   'common.unknown': 'Unknown',
   'common.deleted': 'Deleted',

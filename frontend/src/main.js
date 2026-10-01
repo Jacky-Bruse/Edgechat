@@ -16,6 +16,9 @@ import './styles/ui.css';
 import { initLiquidGlass } from './liquid-glass.js';
 import { initializeI18n } from './i18n.js';
 import { parseNotificationRoomTarget, takeNotificationRoomTarget } from './notification-target.js';
+import { installChunkLoadRecovery } from './chunk-load.ts';
+
+installChunkLoadRecovery(window);
 
 // 点击通知后新打开的窗口从 URL 恢复会话；登录后聊天页也能消费这个目标。
 const isCapacitorNative = Capacitor.isNativePlatform();
@@ -54,7 +57,7 @@ initializeI18n().then(() => store.initialize()).finally(() => {
   app.mount('#app');
   if (typeof document.modelContext?.registerTool === 'function') {
     void import('./webmcp.ts').then(({ registerEdgeChatWebMcp }) => registerEdgeChatWebMcp()).catch(() => {
-      // Optional browser integration must not prevent app startup.
+      // 实验性浏览器集成不可用时，普通聊天仍应正常启动。
     });
   }
   void installCapacitorIntegration({

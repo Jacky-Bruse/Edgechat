@@ -111,6 +111,7 @@ export default {
   "common.refresh": "刷新",
   "common.refreshing": "刷新中...",
   "common.reload": "重新加載",
+  "common.chunkLoadFailed": "部分介面讀取失敗，請檢查網絡後重新載入。重新載入會丟失未發送草稿。",
   "common.loading": "讀取中",
   "common.unknown": "未知",
   "common.deleted": "已刪除",

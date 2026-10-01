@@ -1,6 +1,6 @@
 import { gzipSync } from 'node:zlib';
 
-// Follow only static imports: dynamic routes, dialogs and locales are fetched on demand.
+// 首屏只遍历静态依赖，动态页面、弹窗与语言包应在实际使用时下载。
 export function analyzeFrontendBundle(output) {
   const files = new Map(output.map((file) => [file.fileName, file]));
   const entry = output.find((file) => file.type === 'chunk' && file.isEntry);
@@ -53,7 +53,6 @@ export function analyzeFrontendBundle(output) {
     Object.fromEntries(localeSources.map((locale) => [locale.split('/').at(-1).slice(0, -3), size(pageFiles(page, locale))]))
   ]));
   const all = new Set(files.keys());
-  // This is the complete compiled JS/CSS/HTML, including all locales and the editor chunk.
-  // The self-hosted Lute runtime in public/vendor is reported separately by the CLI.
+  // 编译产物包含全部语言和编辑器分包；public 内的自托管 Lute 由 CLI 单独报告，避免混淆预算。
   return { pages, compiled: size(all), closure, chunkFor, pageFiles, modules, size, files };
 }

@@ -497,7 +497,7 @@ onBeforeUnmount(() => {
   disconnectSocket();
   stopViewportSync();
 });
-// Keep dialogs mounted after first use to preserve exit transitions and focus restoration.
+// 首次使用后保留弹窗实例，关闭时才能完成退场动画并恢复触发按钮焦点。
 const visitedOverlays = reactive(new Set());
 watch(
   () => ({

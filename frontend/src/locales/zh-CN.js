@@ -42,6 +42,7 @@ export default {
   'common.refresh': '刷新',
   'common.refreshing': '刷新中...',
   'common.reload': '重新加载',
+  'common.chunkLoadFailed': '部分界面加载失败，请检查网络后重新加载。重新加载会丢失未发送草稿。',
   'common.loading': '读取中',
   'common.unknown': '未知',
   'common.deleted': '已删除',

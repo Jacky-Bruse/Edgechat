@@ -34,7 +34,7 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            // Share the tree-shaken icon set instead of requesting one tiny chunk per icon.
+            // 共用摇树后的图标集合，避免每个小图标都产生独立请求。
             { name: 'icons', test: /node_modules[\\/]@lucide[\\/]vue[\\/]/ }
           ]
         }
