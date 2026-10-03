@@ -121,6 +121,15 @@ jobs:
           EDGECHAT_APPLY_ENCRYPTION_KEYRING: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_encryption_keyring || false }}
           EDGECHAT_ROTATE_ENCRYPTION_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.rotate_encryption_key || false }}
         run: node .github/scripts/prepare-worker-encryption-secret.mjs
+      - name: Validate optional TURN configuration
+        env:
+          EDGECHAT_TURN_KEY_ID: ${{ secrets.EDGECHAT_TURN_KEY_ID }}
+          EDGECHAT_TURN_API_TOKEN: ${{ secrets.EDGECHAT_TURN_API_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -n "$EDGECHAT_TURN_KEY_ID" || -n "$EDGECHAT_TURN_API_TOKEN" ]]; then
+            test -n "$EDGECHAT_TURN_KEY_ID" && test -n "$EDGECHAT_TURN_API_TOKEN"
+          fi
       - name: Deploy worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -131,6 +140,19 @@ jobs:
             npx wrangler deploy --config wrangler.ci.toml --secrets-file .tmp/worker-secrets.json
           else
             npx wrangler deploy --config wrangler.ci.toml
+          fi
+      - name: Configure TURN secrets (optional)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EDGECHAT_TURN_KEY_ID: ${{ secrets.EDGECHAT_TURN_KEY_ID }}
+          EDGECHAT_TURN_API_TOKEN: ${{ secrets.EDGECHAT_TURN_API_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -n "$EDGECHAT_TURN_KEY_ID" || -n "$EDGECHAT_TURN_API_TOKEN" ]]; then
+            test -n "$EDGECHAT_TURN_KEY_ID" && test -n "$EDGECHAT_TURN_API_TOKEN"
+            printf '%s' "$EDGECHAT_TURN_KEY_ID" | npx wrangler secret put EDGECHAT_TURN_KEY_ID --config wrangler.ci.toml
+            printf '%s' "$EDGECHAT_TURN_API_TOKEN" | npx wrangler secret put EDGECHAT_TURN_API_TOKEN --config wrangler.ci.toml
           fi
       - name: Remove temporary secret files
         if: always()

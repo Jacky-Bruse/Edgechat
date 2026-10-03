@@ -31,6 +31,12 @@ You do not need to maintain a permanently running server. The application and da
 
 [Interface Preview](#interface-preview) · [Live Demo](#live-demo) · [Telegram Bridging](#telegram-two-way-bridging) · [Features](#features) · [Privacy and Encryption](#privacy-and-encryption) · [Deployment](#deployment) · [Local Development](#local-development)
 
+## Direct-message voice calls
+
+From `2.11.0`, web DMs support one-to-one voice calls with answer, decline, mute, hangup and duration. P2P is the default; a compact selector supports manual TURN switching and failed direct connections fall back to TURN. No group/video calls or offline incoming calls; the demo does not place real calls.
+
+Configure Worker / Repository Secrets `EDGECHAT_TURN_KEY_ID` and `EDGECHAT_TURN_API_TOKEN` to enable TURN. Without them only P2P is available. Cloudflare SFU and TURN share the first 1,000 GB free each month; excess egress costs $0.05/GB. See [configuration and protocol](docs/api/voice-calls.md).
+
 ## Cross-instance group binding
 
 Starting with `2.8.0`, administrators can open **Cross-instance group binding** in the admin sidebar to connect a public, private, or general group to one group on another independent EdgeChat site. A ten-minute one-time invitation is claimed by the second administrator, then the initiator verifies the peer origin and group and confirms activation. Direct messages cannot be bound.

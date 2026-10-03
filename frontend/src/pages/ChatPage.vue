@@ -1,9 +1,10 @@
 <script setup>
-import { ArrowLeft, Ban, Bell, BellOff, ContactRound, Menu, MessageCircle, Settings, UsersRound } from '@lucide/vue';
+import { ArrowLeft, Ban, Bell, BellOff, ContactRound, Menu, MessageCircle, Phone, Settings, UsersRound } from '@lucide/vue';
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   consumeNativeRoomTarget,
+  isCapacitorAndroid,
   NATIVE_ROOM_OPEN_EVENT
 } from '../capacitor-platform.ts';
 import { isDemoMode } from '../runtime.js';
@@ -33,6 +34,8 @@ import { useMessageContextMenu } from '../composables/useMessageContextMenu.ts';
 import { useRoomManagement } from '../composables/useRoomManagement.js';
 import { useUnreadInbox } from '../composables/useUnreadInbox.js';
 import { useUserBlock } from '../composables/useUserBlock.ts';
+import { useVoiceCall } from '../composables/useVoiceCall.ts';
+import VoiceCallBar from '../components/chat/VoiceCallBar.vue';
 import { resolveMentionUserIds } from '../mentions.ts';
 import store from '../store.js';
 import api from '../api.js';
@@ -43,6 +46,7 @@ import '../styles/chat.css';
 import '../styles/chat-messages.css';
 import '../styles/chat-attachments.css';
 import '../styles/chat-theme.css';
+import '../styles/voice-call.css';
 
 const AddConversationDialog = defineAsyncComponent(() => import('../components/chat/AddConversationDialog.vue'));
 const CreateGroupDialog = defineAsyncComponent(() => import('../components/chat/CreateGroupDialog.vue'));
@@ -173,12 +177,19 @@ const {
   onRoomAccessRevoked: handleRoomAccessRevoked
 });
 
+const voiceCall = useVoiceCall({ userId: session.value?.userId, error,
+  shouldRing: call => !isRoomMuted({ kind: 'dm', id: call.roomId }),
+  notifyIncoming: call => notifyRoom({ type: 'call_invite', room: { kind: 'dm', id: call.roomId, name: call.name } })
+});
+const callState = voiceCall.state;
+const callMode = voiceCall.mode;
 const { connectUnreadInbox, disconnectUnreadInbox } = useUnreadInbox({
   activeRoom: inboxActiveRoom,
   markConversationRead,
   applyConversationActivity,
   notifyInApp: notifyInAppRoom,
-  notifySystem: notifyRoom
+  notifySystem: notifyRoom,
+  onCallEvent: voiceCall.receive
 });
 
 const wsConnected = computed(() => wsStatus.value === 'open');
@@ -358,7 +369,7 @@ function toggleActiveRoomMute() {
   if (activeRoom.value) toggleRoomMuted(activeRoom.value);
 }
 
-function logout() { store.logout(); router.push('/login'); }
+async function logout() { await voiceCall.hangup(); await store.logout(); router.push('/login'); }
 function openAdmin() { router.push('/admin'); }
 function openSettings() { router.push('/settings'); }
 function openChat() { router.push('/'); }
@@ -473,6 +484,7 @@ async function copySelectedMessage() {
 }
 
 onMounted(() => {
+  window.addEventListener('pagehide', voiceCall.hangup);
   startViewportSync();
   window.addEventListener('focus', syncNotificationPermission);
   window.addEventListener(NATIVE_ROOM_OPEN_EVENT, openNativeRoom);
@@ -487,6 +499,8 @@ function formatBubbleTime(value) {
 }
 
 onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', voiceCall.hangup);
+  void voiceCall.hangup();
   closeUserProfile();
   cancelMessageLongPress();
   nativeRoomNavigationReady = false;
@@ -524,6 +538,7 @@ watch(
       'chat-layout--mobile': isMobileViewport,
       'chat-layout--mobile-list': isMobileViewport && mobileView === 'list',
       'chat-layout--mobile-chat': isMobileViewport && mobileView === 'chat',
+      'chat-layout--calling': Boolean(callState.call),
       'chat-layout--contacts': isContactsView
     }"
   >
@@ -672,7 +687,7 @@ watch(
     <!-- Right Main Chat Window -->
     <main v-if="!isContactsView" class="chat-main">
       <template v-if="activeRoom">
-        <header class="chat-header">
+        <header class="chat-header" :class="{ 'chat-header--dm': activeRoom.kind === 'dm' && !isCapacitorAndroid }">
           <button
             type="button"
             class="chat-header__back"
@@ -703,6 +718,12 @@ watch(
             <span>{{ activeRoomSubtitle }}</span>
           </div>
           <div class="chat-header__actions">
+            <div v-if="activeRoom.kind === 'dm' && !isCapacitorAndroid" class="chat-call-controls">
+              <button type="button" class="chat-header__button" :title="t('call.voice')" :aria-label="t('call.voice')" :disabled="Boolean(callState.call) || activeDmBlockedByMe" @click="voiceCall.start(activeRoom)"><Phone :size="19" aria-hidden="true" /></button>
+              <select class="chat-call-mode" :value="callMode" :aria-label="t('call.mode')" :title="t('call.mode')" :disabled="['permission', 'calling'].includes(callState.phase)" @change="voiceCall.changeMode($event.target.value)">
+                <option value="auto">P2P</option><option value="relay">TURN</option>
+              </select>
+            </div>
             <div
               class="chat-header__status"
               :class="wsConnected ? 'online' : 'offline'"
@@ -903,6 +924,7 @@ watch(
       </aside>
     </div>
 
+    <VoiceCallBar :state="callState" @accept="voiceCall.accept" @hangup="voiceCall.hangup" @mute="voiceCall.toggleMute" @play="voiceCall.play" />
     <MobileNavigationDrawer
       v-if="visitedOverlays.has('mobileNavigation')"
       :show="showMobileNavigation"
@@ -1002,6 +1024,12 @@ watch(
   color: var(--chat-ink);
   font-family: var(--chat-font);
   letter-spacing: normal;
+}
+
+.chat-layout--calling {
+  top: calc(var(--chat-viewport-offset-top, 0px) + 64px);
+  height: calc(var(--chat-viewport-height, 100dvh) - 64px);
+  min-height: 0;
 }
 
 .left-sidebar {

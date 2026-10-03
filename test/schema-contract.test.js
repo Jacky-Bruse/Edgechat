@@ -105,6 +105,7 @@ test("full schema executes baseline migration plan into ledger and passes system
     SESSIONS: { get: async () => null }, FILES: { list: async () => ({ objects: [] }) },
     CHANNEL_ROOM: namespace('ChannelRoom'), USER_INBOX: namespace('UserInbox'), SCHEDULER: namespace('Scheduler'),
     INSTANCE_BRIDGE: namespace('InstanceBridge'),
+    VOICE_CALL: namespace('VoiceCall'),
     EDGECHAT_ENCRYPTION_KEYRING: 'presence-only'
   });
   assert.equal(result.status, 'ok');

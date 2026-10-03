@@ -30,6 +30,8 @@ import { rescueBridgeDeliveries } from './integrations/instance-bridge/delivery.
 import { registerChannelRoutes } from './api/channels.js';
 import { registerContactRoutes } from './api/contacts.ts';
 import { registerDmRoutes } from './api/dm.js';
+import { registerCallRoutes } from './api/calls.ts';
+import { VoiceCall } from './do/VoiceCall.ts';
 import { registerMessageRoutes } from './api/messages.js';
 import { registerUploadRoutes } from './api/upload.js';
 import { registerUserBlockRoutes } from './api/user-blocks.ts';
@@ -281,6 +283,7 @@ app.use('/api/admin/*', adminMiddleware);
 registerMessageRoutes(app);
 registerContactRoutes(app);
 registerDmRoutes(app);
+registerCallRoutes(app);
 registerUserBlockRoutes(app);
 registerUserProfileRoutes(app);
 registerUploadRoutes(app);
@@ -353,4 +356,4 @@ export function shouldRunDailyGc(scheduledTime) {
   const time = new Date(scheduledTime);
   return time.getUTCHours() === 19 && time.getUTCMinutes() === 0;
 }
-export { ChannelRoom, Scheduler, UserInbox, InstanceBridge };
+export { ChannelRoom, Scheduler, UserInbox, InstanceBridge, VoiceCall };

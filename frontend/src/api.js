@@ -58,6 +58,17 @@ async function request(path, options = {}) {
 }
 
 export default {
+  callConfig(roomId) {
+    return request(`/calls/${roomId}/config`, { signal: AbortSignal.timeout(10000) });
+  },
+  callAction(roomId, body) {
+    return request(`/calls/${roomId}/action`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(10000), keepalive: ['hangup', 'reject'].includes(body.type)
+    });
+  },
+  callIce(roomId, callId, clientId) {
+    return request(`/calls/${roomId}/ice?${new URLSearchParams({ callId, clientId })}`, { signal: AbortSignal.timeout(15000) });
+  },
   adminStealth() {
     return request('/admin/stealth');
   },

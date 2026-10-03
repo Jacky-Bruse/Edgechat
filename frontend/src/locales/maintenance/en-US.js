@@ -1,4 +1,6 @@
 export default {
+  'maintenance.voiceCall': 'VoiceCall DO',
+  'maintenance.method.voiceCall': 'VOICE_CALL binding + internal health request',
   "admin.nav.maintenance": "Installation & maintenance",
   "admin.nav.maintenanceDescription": "Inspect dependencies, database schema and deployed version",
   "maintenance.description": "Check whether this deployment is ready. Read-only: no data changes or cleanup.",
