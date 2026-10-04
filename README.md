@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Edgechat.png" alt="EdgeChat" width="640" />
+  <img src="Edgechat.jpg" alt="EdgeChat" width="640" />
 
   <h3>自己的聊天空间，不必从维护服务器开始。</h3>
   <p>基于 Cloudflare 的开源自部署团队聊天系统</p>

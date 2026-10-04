@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Edgechat.png" alt="EdgeChat" width="640" />
+  <img src="Edgechat.jpg" alt="EdgeChat" width="640" />
 
   <h3>Your own chat space, without starting by maintaining a server.</h3>
   <p>Open-source, self-hosted team chat running on Cloudflare</p>

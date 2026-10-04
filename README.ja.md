@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="Edgechat.png" alt="EdgeChat" width="640" />
+  <img src="Edgechat.jpg" alt="EdgeChat" width="640" />
 
   <h3>自分のチャットスペースを、サーバーの保守から始める必要はありません。</h3>
   <p>Cloudflare を基盤としたオープンソースのセルフホスト型チームチャットシステム</p>
