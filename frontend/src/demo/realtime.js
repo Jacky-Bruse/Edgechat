@@ -66,7 +66,7 @@ function telegramSender() {
   return {
     id: 'telegram:-1002345678901:demo',
     username: '',
-    displayName: 'Telegram · 演示群成员',
+    displayName: demoState.copy.telegramMember,
     avatarUrl: '',
     kind: 'external',
     source: 'telegram'
@@ -109,7 +109,7 @@ function handleRoomFrame(socket, frame) {
         const reply = createDemoMessage({
           kind: socket.kind,
           roomId: socket.roomId,
-	        content: 'Telegram 已收到这条消息，并把群内回复同步回 EdgeChat。',
+	        content: demoState.copy.telegramAutoReply,
 	        attachment: null,
 	        sender: telegramSender(),
 	        mentionUserIds: [],

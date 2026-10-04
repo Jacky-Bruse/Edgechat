@@ -610,6 +610,7 @@ export default {
   "demo.local": "本地演示",
   "demo.selectPage": "選擇演示頁面",
   "demo.reset": "重置演示數據",
+  "demo.star": "在 GitHub 上給我們點個 Star",
   "demo.buildMessage": "純前端演示構建"
 };
 

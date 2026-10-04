@@ -100,6 +100,15 @@ test("窄屏演示导航避开输入区和聊天覆盖层", () => {
 	}
 });
 
+test("演示 Star 入口保留安全外链、无障碍标签与窄屏触控区域", () => {
+	assert.match(demoNavigator, /class="demo-navigator__star"[^>]*href="https:\/\/github\.com\/aozorae\/Edgechat"[^>]*target="_blank"[^>]*rel="noopener noreferrer"[^>]*:title="t\('demo\.star'\)"[^>]*:aria-label="t\('demo\.star'\)"/s);
+	assert.match(demoNavigator, /<Star[^>]*aria-hidden="true"/);
+	assert.match(getStyleRule(demoNavigator, ".demo-navigator__star:focus-visible"), /outline:\s*2px solid/);
+	const mobileStyles = demoNavigator.slice(demoNavigator.indexOf("@media (max-width: 640px)"));
+	assert.match(getStyleRule(mobileStyles, ".demo-navigator__star"), /width:\s*44px;\s*height:\s*44px;/);
+	assert.match(getStyleRule(mobileStyles, ".demo-navigator__star span"), /display:\s*none;/);
+});
+
 test("聊天侧栏跟随全屏根节点且不污染后台根节点", () => {
 	for (const selector of [
 		".left-sidebar",

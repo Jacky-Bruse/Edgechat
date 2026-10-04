@@ -98,7 +98,7 @@ function adminOverviewPayload() {
   const dms = demoState.dms.map((dm) => ({
     id: dm.id,
     name: dm.participantIds.join(':'),
-    participants: `演示管理员 / ${dm.otherUser.displayName}`,
+    participants: `${demoState.copy.adminName} / ${dm.otherUser.displayName}`,
     messageCount: (demoState.messages[roomKey('dm', dm.id)] || []).length,
     createdAt: dm.createdAt
   }));
@@ -516,7 +516,7 @@ export async function requestDemo(path, options = {}) {
       channelId: channel.id,
       channelName: channel.name,
       channelKind: channel.kind,
-      telegramChatTitle: 'Telegram 演示群',
+      telegramChatTitle: demoState.copy.telegramChatTitle,
       telegramChatId: String(body.telegramChatId || ''),
       enabled: true
     });

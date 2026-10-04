@@ -539,6 +539,7 @@ export default {
   'demo.local': 'Local demo',
   'demo.selectPage': 'Select demo page',
   'demo.reset': 'Reset demo data',
+  'demo.star': 'Star on GitHub',
   'demo.buildMessage': 'Frontend-only demo build'
 };
 

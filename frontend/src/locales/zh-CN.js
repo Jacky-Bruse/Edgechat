@@ -539,5 +539,6 @@ export default {
   'demo.local': '本地演示',
   'demo.selectPage': '选择演示页面',
   'demo.reset': '重置演示数据',
+  'demo.star': '在 GitHub 上给我们点个 Star',
   'demo.buildMessage': '纯前端演示构建'
 };

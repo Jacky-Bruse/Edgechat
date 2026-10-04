@@ -5,7 +5,21 @@ import {
   connectDemoInboxSocket,
   connectDemoRoomSocket
 } from '../frontend/src/demo/realtime.js';
-import { resetDemoState } from '../frontend/src/demo/state.js';
+import { createDemoFixtures } from '../frontend/src/demo/fixtures.js';
+import { demoState, resetDemoState } from '../frontend/src/demo/state.js';
+
+test('demo sample conversations follow the visitor language', () => {
+  const english = createDemoFixtures('en-US');
+  const traditional = createDemoFixtures('zh-TW');
+  const simplified = createDemoFixtures('zh-CN');
+
+  assert.equal(english.session.displayName, 'Demo Admin');
+  assert.equal(english.channels[2].name, 'Telegram Bridge');
+  assert.doesNotMatch(JSON.stringify(english.messages), /[\u4e00-\u9fff]/);
+  assert.equal(traditional.channels[1].name, '產品協作');
+  assert.equal(simplified.channels[1].name, '产品协作');
+  assert.equal(simplified.messages['private:2'][1].mentions[0].displayName, '演示管理员');
+});
 
 test.beforeEach(() => {
   resetDemoState();
@@ -276,7 +290,7 @@ test('Telegram replies increment the inbox unread projection', async () => {
 	  assert.equal(inboxFrames.at(-1).mentionUnreadCount, 1);
 	  assert.equal(inboxFrames.at(-1).replyToMe, true);
 	  assert.equal(inboxFrames.at(-1).mentionsMe, false);
-  assert.equal(inboxFrames.at(-1).room.name, 'Telegram 联动');
+  assert.equal(inboxFrames.at(-1).room.name, demoState.copy.telegramName);
   roomSocket.close();
   inboxSocket.close();
 });

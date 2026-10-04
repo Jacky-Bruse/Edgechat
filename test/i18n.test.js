@@ -31,6 +31,12 @@ test('三种语言包保持相同键集合', () => {
   assert.deepEqual(Object.keys(zhTW).sort(), Object.keys(zhCN).sort());
 });
 
+test('演示 Star 入口提供三语言提示文案', () => {
+  assert.equal(zhCN['demo.star'], '在 GitHub 上给我们点个 Star');
+  assert.equal(zhTW['demo.star'], '在 GitHub 上給我們點個 Star');
+  assert.equal(enUS['demo.star'], 'Star on GitHub');
+});
+
 test('简繁中文界面支持插值与未知键回退', async () => {
   await setLocale(CHINESE_LOCALE);
   assert.equal(getLocale(), CHINESE_LOCALE);
