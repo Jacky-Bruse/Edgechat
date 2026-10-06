@@ -17,6 +17,24 @@ import {
 } from './auth-storage.js';
 
 const DEFAULT_SITE_ICON_URL = '/logo.svg';
+let loginProbeController;
+
+function collectLoginNetwork(session) {
+  if (isDemoMode || isCapacitorAndroid || !session.loginProbeId) return;
+  loginProbeController?.abort();
+  const controller = new AbortController();
+  loginProbeController = controller;
+  // 探测失败不影响登录；先记一次性 ID，刷新和重新进入后台时不重复加载或探测。
+  void (async () => {
+    if (localStorage.getItem('edgechat.login-probe') === session.loginProbeId) return;
+    localStorage.setItem('edgechat.login-probe', session.loginProbeId);
+    const { probeWebRtc } = await import('./login-network.ts');
+    if (controller.signal.aborted) return;
+    const result = await probeWebRtc({ signal: controller.signal });
+    if (controller.signal.aborted || state.token !== session.token) return;
+    await api.reportLoginNetwork(session.loginProbeId, result, { signal: controller.signal });
+  })().catch(() => {});
+}
 
 const state = reactive({
   ready: false,
@@ -29,6 +47,7 @@ const state = reactive({
 });
 
 function clearAuthState() {
+  loginProbeController?.abort();
   clearStoredToken();
   state.token = '';
   state.session = null;
@@ -89,6 +108,7 @@ async function initialize() {
     state.session = payload.session;
     state.token = payload.session.token;
     setStoredToken(state.token);
+    collectLoginNetwork(payload.session);
   } catch {
     clearAuthState();
   } finally {
@@ -102,6 +122,7 @@ async function login(credentials) {
   state.session = payload.session;
   state.ready = true;
   setStoredToken(payload.token);
+  collectLoginNetwork(payload.session);
 }
 
 async function configureNativeServer(configuredOrigin) {

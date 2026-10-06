@@ -29,6 +29,7 @@ import { InstanceBridge } from './do/InstanceBridge.ts';
 import { rescueBridgeDeliveries } from './integrations/instance-bridge/delivery.ts';
 import { registerChannelRoutes } from './api/channels.js';
 import { registerContactRoutes } from './api/contacts.ts';
+import { registerLoginNetworkRoutes } from './api/login-network.ts';
 import { registerDmRoutes } from './api/dm.js';
 import { registerCallRoutes } from './api/calls.ts';
 import { VoiceCall } from './do/VoiceCall.ts';
@@ -154,7 +155,7 @@ app.post('/api/auth/login', async (c) => {
     return errorResponse('请输入用户名和密码');
   }
 
-  const session = await loginWithPassword(c.env, username, password);
+  const session = await loginWithPassword(c.env, username, password, c.req.raw);
   if (!session) {
     return errorResponse('账号或密码错误', 401);
   }
@@ -169,6 +170,7 @@ app.post('/api/auth/login', async (c) => {
 registerV1Routes(app);
 
 app.use('/api/*', authMiddleware);
+registerLoginNetworkRoutes(app);
 
 app.get('/api/auth/session', async (c) => {
   const session = c.get('session');

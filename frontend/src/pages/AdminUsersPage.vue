@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { defineAsyncComponent, onMounted, ref } from 'vue';
+import { UserRoundSearch } from '@lucide/vue';
 import api from '../api.js';
 import UserBanDialog from '../components/admin/UserBanDialog.vue';
 import UiButton from '../components/ui/Button.vue';
@@ -12,6 +13,14 @@ const users = ref([]);
 const banDialogUser = ref(null);
 const banSaving = ref(false);
 const banError = ref('');
+const UserDetailsDialog = defineAsyncComponent(() => import('../components/admin/UserDetailsDialog.vue'));
+const detailsUser = ref(null);
+const detailsOpened = ref(false);
+
+function openDetails(user) {
+  detailsOpened.value = true;
+  detailsUser.value = user;
+}
 
 async function loadUsers() {
   loading.value = true;
@@ -140,6 +149,9 @@ onMounted(loadUsers);
                     </UiButton>
                     <UiButton variant="secondary" size="sm" @click="resetPassword(user)">{{ t('users.resetPassword') }}</UiButton>
                     <UiButton variant="destructive" size="sm" @click="removeUser(user)">{{ t('common.delete') }}</UiButton>
+                    <UiButton variant="secondary" size="sm" class="user-details-trigger" :title="t('users.details.open')" :aria-label="t('users.details.open')" @click="openDetails(user)">
+                      <UserRoundSearch :size="18" aria-hidden="true" />
+                    </UiButton>
                   </div>
                 </td>
               </tr>
@@ -157,5 +169,10 @@ onMounted(loadUsers);
       @close="closeBanDialog"
       @confirm="disableUser"
     />
+    <UserDetailsDialog v-if="detailsOpened" :show="Boolean(detailsUser)" :user="detailsUser" @close="detailsUser = null" />
   </div>
 </template>
+
+<style scoped>
+.user-details-trigger { width: 44px; min-height: 44px; padding: 0; }
+</style>

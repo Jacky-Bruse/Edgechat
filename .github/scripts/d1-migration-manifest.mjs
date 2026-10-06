@@ -209,6 +209,21 @@ export const D1_MIGRATIONS = [
     file: "worker/migrations/2026-09-26-telegram-notifications.sql",
     artifacts: ["table:telegram_notification_users", "table:telegram_notification_outbox", "index:idx_telegram_notification_due"],
   },
+  {
+    id: "2026-10-05-user-login-info",
+    file: "worker/migrations/2026-10-05-user-login-info.sql",
+    artifacts: ["table:user_login_info"],
+  },
+  {
+    id: "2026-10-05-user-webrtc",
+    file: "worker/migrations/2026-10-05-user-webrtc.sql",
+    artifacts: ["column:user_login_info.login_probe_id", "column:user_login_info.webrtc_ips", "column:user_login_info.webrtc_status", "column:user_login_info.webrtc_checked_at"],
+  },
+  {
+    id: "2026-10-05-users-login-history",
+    file: "worker/migrations/2026-10-05-users-login-history.sql",
+    artifacts: ["column:user_login_info.id", "column:user_login_info.ip", "column:user_login_info.login_at", "index:idx_user_login_info_recent", "trigger:limit_user_login_info"],
+  },
 ];
 
 // b3f6855 曾发布、0c13e8f 已撤回的迁移：仅识别历史 ledger，不要求新安装创建废弃表，也不删除旧数据。

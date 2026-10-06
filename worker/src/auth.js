@@ -96,7 +96,7 @@ export async function putSession(env, session, { ttlSeconds = SESSION_TTL_SECOND
   });
 }
 
-export async function createSession(env, user) {
+export async function createSession(env, user, { loginProbeId = '' } = {}) {
   const token = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
   const session = {
     token,
@@ -106,7 +106,8 @@ export async function createSession(env, user) {
     bio: user.bio ?? '',
     avatarUrl: user.avatar_key ? `/files/${encodeURIComponent(user.avatar_key)}` : '',
     isAdmin: isAdminUser(env, user),
-    sessionVersion: toSessionVersion(user.session_version)
+    sessionVersion: toSessionVersion(user.session_version),
+    ...(loginProbeId ? { loginProbeId } : {})
   };
 
   await putSession(env, session);

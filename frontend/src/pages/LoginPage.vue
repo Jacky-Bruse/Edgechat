@@ -124,7 +124,6 @@ async function submit(event) {
 </template>
 
 <style scoped>
-
 .login-page {
   min-height: 100vh;
   display: flex;

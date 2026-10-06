@@ -187,11 +187,15 @@ test('demo room socket echoes sent messages through the real-time contract', asy
 test('demo direct messages honor blocking and resume after unblocking', async () => {
 	await requestDemo('/users/2/block', { method: 'PUT' });
 	assert.equal((await requestDemo('/bootstrap')).dms[0].isBlockedByMe, true);
+	const blocked = (await requestDemo('/users/blocked')).users;
+	assert.deepEqual(blocked.map((user) => user.id), [2]);
+	assert.deepEqual(Object.keys(blocked[0]).sort(), ['avatarUrl', 'displayName', 'id', 'username']);
 
 	await requestDemo('/auth/login', {
 		method: 'POST',
 		body: { username: 'alice', password: 'demo' }
 	});
+	assert.deepEqual((await requestDemo('/users/blocked')).users, [], '反向拉黑不属于本人的列表');
 	const frames = [];
 	let socket;
 	await new Promise((resolve) => {
@@ -219,6 +223,8 @@ test('demo direct messages honor blocking and resume after unblocking', async ()
 		body: { username: 'admin', password: 'demo' }
 	});
 	await requestDemo('/users/2/block', { method: 'DELETE' });
+	assert.deepEqual((await requestDemo('/users/blocked')).users, []);
+	assert.equal((await requestDemo('/bootstrap')).dms[0].isBlockedByMe, false);
 	await requestDemo('/auth/login', {
 		method: 'POST',
 		body: { username: 'alice', password: 'demo' }

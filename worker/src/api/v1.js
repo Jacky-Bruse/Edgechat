@@ -7,6 +7,7 @@ import {
 } from '../data/messages.js';
 import { getSiteSettings } from '../data/site-settings.js';
 import { getUserByUsername } from '../data/users.js';
+import { recordLoginInfo } from '../data/user-login-info.ts';
 import {
   forwardInboxConnection,
   forwardRoomConnection,
@@ -116,6 +117,7 @@ export function registerV1Routes(app) {
       return v1ErrorResponse('invalid_credentials', '账号或密码错误', 401);
     }
     const result = await createMobileDeviceSession(c.env, user, payload.device);
+    await recordLoginInfo(c.env.DB, user.id, c.req.raw);
     return c.json(result);
   });
 

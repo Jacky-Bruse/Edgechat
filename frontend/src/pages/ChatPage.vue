@@ -137,7 +137,8 @@ function openInAppNotification(notification) {
 const {
   isBlockedByMe: activeDmBlockedByMe,
   saving: userBlockSaving,
-  toggleUserBlock
+  toggleUserBlock,
+  applyBlockState
 } = useUserBlock({ activeRoom, dms, error });
 
 function handleRoomActivity({ room, message }) {
@@ -680,8 +681,10 @@ watch(
     <ContactsPage
       v-if="contactsVisited"
       v-show="isContactsView"
+      :visible="isContactsView"
       @open-navigation="showMobileNavigation = true"
       @open-profile="openLocalUserProfile"
+      @unblocked="applyBlockState($event, false)"
     />
 
     <!-- Right Main Chat Window -->

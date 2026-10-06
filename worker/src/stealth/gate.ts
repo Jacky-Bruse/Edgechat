@@ -63,7 +63,7 @@ export async function submitGate(request: Request, env, settings: StealthSetting
   if (!username || username.length > 100 || !password || password.length > 1024) {
     return gatePage(settings, true, 400);
   }
-  const session = await loginWithPassword(env, username, password);
+  const session = await loginWithPassword(env, username, password, request);
   if (!session) return gatePage(settings, true, 401);
   return new Response(null, {
     status: 303,

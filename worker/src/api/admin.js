@@ -11,6 +11,7 @@ import {
 import { getSiteSettings, updateSiteSettings } from '../data/site-settings.js';
 import { isR2ObjectUnavailableError } from '../data/uploaded-files.js';
 import { listAdminUsers, listStorageOwners } from '../data/users.js';
+import { getAdminUserDetails } from '../data/user-login-info.ts';
 import { ApiError } from '../errors.js';
 import { summarizeR2Objects } from '../storage-statistics.js';
 import { errorResponse, parseJsonRequest, randomToken } from '../utils.js';
@@ -134,6 +135,18 @@ export function registerAdminRoutes(app) {
   app.get('/api/admin/users', async (c) => {
     const users = await listAdminUsers(c.env.DB);
     return c.json({ users });
+  });
+
+  app.get('/api/admin/users/:userId/details', async (c) => {
+    const rawId = c.req.param('userId');
+    const userId = Number(rawId);
+    if (!/^[1-9]\d*$/.test(rawId) || !Number.isSafeInteger(userId)) {
+      return errorResponse('用户不存在', 404);
+    }
+    const user = await getAdminUserDetails(c.env.DB, userId);
+    if (!user) return errorResponse('用户不存在', 404);
+    c.header('Cache-Control', 'private, no-store');
+    return c.json({ user });
   });
 
   app.post('/api/admin/users', async (c) => {

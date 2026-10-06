@@ -1,6 +1,6 @@
 {
 	"name": "edgechat",
-		"version": "2.11.0",
+		"version": "2.13.0",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -36,6 +36,7 @@
 		"@capacitor/android": "^8.5.1",
 		"@capacitor/core": "^8.5.1",
 		"@lucide/vue": "^1.28.0",
+		"bowser": "^2.14.1",
 		"dompurify": "^3.4.15",
 		"hono": "^4.8.3",
 		"markdown-it": "^15.0.2",

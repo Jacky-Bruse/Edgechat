@@ -4,6 +4,7 @@ import {
   findDemoChannel,
   findDemoUser,
   getDemoMembers,
+  isDemoUserBlocked,
   projectDemoChannel,
   projectDemoDm,
   projectDemoUser,
@@ -293,6 +294,11 @@ export async function requestDemo(path, options = {}) {
   if (method === 'GET' && pathname === '/contacts') {
     return contactsPayload();
   }
+  if (method === 'GET' && pathname === '/users/blocked') {
+    return { users: demoState.users
+      .filter((user) => isDemoUserBlocked(demoState.session.userId, user.id))
+      .map(({ id, username, displayName, avatarUrl }) => ({ id, username, displayName, avatarUrl })) };
+  }
   let match = pathname.match(/^\/users\/([^/]+)\/profile$/);
   if (method === 'GET' && match) {
     const id = parseLocalUserId(match[1]);
@@ -449,6 +455,20 @@ export async function requestDemo(path, options = {}) {
   }
   if (method === 'POST' && pathname === '/admin/users') {
     return { user: createAdminUser(body) };
+  }
+
+  match = pathname.match(/^\/admin\/users\/(\d+)\/details$/);
+  if (method === 'GET' && match) {
+    const user = findDemoUser(match[1]);
+    if (!user) fail('用户不存在', 404);
+    // 演示使用文档保留地址，不采集访客网络或设备信息。
+    return { user: { ...cloneDemo(projectDemoUser(user)), isAdmin: Boolean(user.isAdmin), bio: user.bio || '', loginHistory: [
+      { id: 3, ip: '2001:db8::10', loginAt: '2026-10-05 08:00:00', webrtcIps: ['192.0.2.10'], webrtcCheckedAt: '2026-10-05 08:00:01',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' },
+      { id: 2, ip: '192.0.2.20', loginAt: '2026-10-04 08:00:00', webrtcIps: ['192.0.2.21'], webrtcCheckedAt: '2026-10-04 08:00:01',
+        userAgent: 'Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD1) AppleWebKit/537.36 Chrome/90.0.0.0 Mobile Safari/537.36' },
+      { id: 1, ip: '192.0.2.30', loginAt: '2026-10-03 08:00:00', webrtcIps: [], webrtcCheckedAt: null, userAgent: '' },
+    ] } };
   }
 
   match = pathname.match(/^\/admin\/users\/(\d+)\/reset-password$/);

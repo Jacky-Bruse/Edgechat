@@ -18,6 +18,27 @@ CREATE TABLE IF NOT EXISTS users (
   deleted_at TEXT
 );
 
+-- 每个用户最多三次登录；数据库自动淘汰最旧记录，避免依赖定时扫描和前端清理。
+CREATE TABLE IF NOT EXISTS user_login_info (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ip TEXT NOT NULL CHECK(length(ip) <= 64),
+  login_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  user_agent TEXT NOT NULL CHECK(length(user_agent) <= 1024),
+  login_probe_id TEXT NOT NULL DEFAULT '',
+  webrtc_ips TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(webrtc_ips) AND json_type(webrtc_ips) = 'array' AND json_array_length(webrtc_ips) <= 4 AND length(webrtc_ips) <= 193),
+  webrtc_status TEXT NOT NULL DEFAULT 'not_run',
+  webrtc_checked_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_user_login_info_recent ON user_login_info(user_id, id DESC);
+CREATE TRIGGER IF NOT EXISTS limit_user_login_info
+AFTER INSERT ON user_login_info
+BEGIN
+  DELETE FROM user_login_info WHERE user_id = NEW.user_id AND id NOT IN (
+    SELECT id FROM user_login_info WHERE user_id = NEW.user_id ORDER BY id DESC LIMIT 3
+  );
+END;
+
 CREATE TABLE IF NOT EXISTS channels (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,

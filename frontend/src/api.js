@@ -95,6 +95,11 @@ export default {
   logout() {
     return request('/auth/logout', { method: 'POST' });
   },
+  reportLoginNetwork(probeId, result, options) {
+    return request('/auth/login-network', {
+      ...options, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: { probeId, ...result }
+    });
+  },
   session() {
     return request('/auth/session');
   },
@@ -120,6 +125,9 @@ export default {
   },
   getContacts(options = {}) {
     return request('/contacts', options);
+  },
+  getBlockedUsers(options = {}) {
+    return request('/users/blocked', options);
   },
   getUserProfile(userId, options = {}) {
     return request(`/users/${encodeURIComponent(userId)}/profile`, options);
@@ -256,6 +264,9 @@ export default {
   },
   adminUsers() {
     return request('/admin/users');
+  },
+  adminUserDetails(userId, options = {}) {
+    return request(`/admin/users/${userId}/details`, options);
   },
   adminOverview() {
     return request('/admin/overview');
