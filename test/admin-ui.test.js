@@ -94,9 +94,10 @@ test('存储统计由按钮手动刷新且四个统计列均可排序', () => {
   assert.match(routerSource, /component: \(\) => import\('\.\/pages\/AdminStoragePage\.vue'\)/);
   assert.match(routerSource, /path: 'storage'/);
   assert.match(apiSource, /adminStorageScan/);
-  assert.match(adminApiSource, /\/api\/admin\/storage\/scan/);
-  assert.match(adminApiSource, /FILES\.list/);
-  assert.match(adminApiSource, /没有绑定 R2，无法统计存储空间/);
+  const storageApi = readFileSync(new URL('../worker/src/api/storage.ts', import.meta.url), 'utf8');
+  assert.match(storageApi, /\/api\/admin\/storage\/scan/);
+  assert.match(storageApi, /FILES\.list/);
+  assert.match(storageApi, /没有绑定 R2，无法统计存储空间/);
   assert.match(storageSource, /@click="refreshStorage"/);
   assert.doesNotMatch(storageSource, /onMounted\(refreshStorage\)/);
   assert.doesNotMatch(storageSource, /尚未统计|10 GB|免费存储/);
@@ -155,9 +156,9 @@ test('网站设置只读取站点配置且不重复展示统计信息', () => {
 
 test('仪表盘复用现有概况接口并只展示可验证统计', () => {
   assert.match(dashboardSource, /api\.adminOverview\(\)/);
-  assert.match(dashboardSource, /channel\.messageCount/);
-  assert.match(dashboardSource, /dm\.messageCount/);
-  assert.match(dashboardSource, /overview\.value\.users\.filter/);
+  assert.match(dashboardSource, /overview\.value\.stats\.messages/);
+  assert.match(dashboardSource, /overview\.value\.stats\.activeUsers/);
+  assert.doesNotMatch(dashboardSource, /overview\.value\.users/);
   assert.match(dashboardSource, /t\('dashboard\.quickAccess'\)/);
   assert.match(dashboardSource, /t\('dashboard\.systemOverview'\)/);
 });

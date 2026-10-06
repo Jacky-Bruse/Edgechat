@@ -3,6 +3,7 @@ import { isCapacitorAndroid } from './capacitor-platform.ts';
 import { isDemoMode } from './runtime.js';
 import store from './store.js';
 import { addAuthInvalidListener } from './auth-storage.js';
+import { canVisit, firstAdminPage } from './authorization.ts';
 
 const router = createRouter({
   history: isCapacitorAndroid ? createWebHashHistory() : createWebHistory(),
@@ -36,6 +37,14 @@ const router = createRouter({
       component: () => import('./pages/AdminPage.vue'),
       meta: { admin: true, transition: 'page' },
       children: [
+        {
+          path: 'rbac', name: 'admin-rbac', component: () => import('./pages/AdminRbacPage.vue'),
+          meta: { admin: true, adminTitleKey: 'rbac.title', adminIcon: 'users', transition: 'page' }
+        },
+        {
+          path: 'channels', name: 'admin-channels', component: () => import('./pages/AdminChannelsPage.vue'),
+          meta: { admin: true, adminTitleKey: 'rbac.channels', adminIcon: 'users', transition: 'page' }
+        },
         {
           path: '',
           redirect: { name: 'admin-dashboard' }
@@ -129,8 +138,9 @@ router.beforeEach(async (to, from) => {
     return '/login';
   }
 
-  if (to.meta.admin && !store.session.isAdmin) {
-    return '/';
+  if (to.meta.admin) {
+    try { await store.refreshAuthorization(); } catch { return '/'; }
+    if (!canVisit(to.path.split('/')[2])) return firstAdminPage();
   }
 
   if (

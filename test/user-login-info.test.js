@@ -19,11 +19,11 @@ async function harness() {
   const database = new SQL.Database();
   database.exec(schema);
   for (const name of ['admin', 'alice', 'unused']) {
-    database.run('INSERT INTO users (username, display_name, password_hash, password_salt, is_admin) VALUES (?, ?, ?, ?, ?)',
+    database.run('INSERT INTO users (username, display_name, password_hash, password_salt, is_super_admin) VALUES (?, ?, ?, ?, ?)',
       [name, name, password.hash, password.salt, name === 'admin' ? 1 : 0]);
   }
   const env = { DB: createD1Adapter(database), SESSIONS: createKvAdapter() };
-  const admin = await createSession(env, { id: 1, username: 'admin', display_name: 'admin', is_admin: 1, session_version: 0 });
+  const admin = await createSession(env, { id: 1, username: 'admin', display_name: 'admin', is_super_admin: 1, session_version: 0 });
   const alice = await createSession(env, { id: 2, username: 'alice', display_name: 'alice', session_version: 0 });
   async function request(path, { token = admin.token, body, headers = {}, method = body ? 'POST' : 'GET' } = {}) {
     const response = await worker.fetch(new Request(`https://edgechat.test/api${path}`, {

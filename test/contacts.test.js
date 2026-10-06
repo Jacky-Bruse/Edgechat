@@ -19,7 +19,7 @@ async function harness() {
 			[name, name === "available" ? "Same name" : name, password.hash, password.salt],
 		);
 	}
-	database.run("UPDATE users SET is_admin = 1 WHERE id = 1");
+	database.run("UPDATE users SET is_super_admin = 1 WHERE id = 1");
 	database.run("UPDATE users SET is_disabled = 1 WHERE id = 3");
 	database.run("UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = 4");
 	database.run("UPDATE users SET disabled_until = datetime('now', '-1 hour') WHERE id = 5");
@@ -27,10 +27,10 @@ async function harness() {
 	database.run("INSERT INTO user_blocks (blocker_id, blocked_id) VALUES (1, 7)");
 	const env = { DB: createD1Adapter(database), SESSIONS: createKvAdapter() };
 	const admin = await createSession(env, {
-		id: 1, username: "admin", display_name: "admin", is_admin: 1, session_version: 0,
+		id: 1, username: "admin", display_name: "admin", is_super_admin: 1, session_version: 0,
 	});
 	const member = await createSession(env, {
-		id: 2, username: "existing-dm", display_name: "existing-dm", is_admin: 0, session_version: 0,
+		id: 2, username: "existing-dm", display_name: "existing-dm", is_super_admin: 0, session_version: 0,
 	});
 	async function request(path, { token = admin.token, method = "GET", body } = {}) {
 		const response = await worker.fetch(new Request(`https://edgechat.test/api${path}`, {

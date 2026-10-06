@@ -5,6 +5,7 @@ import store from '../../store.js';
 import UiButton from '../ui/Button.vue';
 import UiSurface from '../ui/Surface.vue';
 import { t } from '../../i18n.js';
+import { can } from '../../authorization.ts';
 
 const loading = ref(false);
 const error = ref('');
@@ -83,13 +84,13 @@ onMounted(loadSiteSettings);
     <p v-if="error" class="error-text">{{ error }}</p>
     <label class="field">
       <span>{{ t('site.name') }}</span>
-      <input v-model.trim="siteForm.siteName" :placeholder="t('site.namePlaceholder')" />
+      <input v-model.trim="siteForm.siteName" :readonly="!can('site.appearance.update')" :placeholder="t('site.namePlaceholder')" />
     </label>
     <label class="field">
       <span>{{ t('site.iconUrl') }}</span>
-      <input v-model.trim="siteForm.siteIconUrl" :placeholder="t('site.iconUrlPlaceholder')" />
+      <input v-model.trim="siteForm.siteIconUrl" :readonly="!can('site.appearance.update')" :placeholder="t('site.iconUrlPlaceholder')" />
     </label>
-    <div class="inline-actions">
+    <div v-if="can('site.appearance.update')" class="inline-actions">
       <input ref="iconFileInputEl" type="file" accept="image/*" hidden @change="uploadSiteIcon" />
       <UiButton variant="secondary" size="sm" :disabled="iconUploading" @click="openIconPicker">
         {{ iconUploading ? t('common.uploading') : t('site.uploadIcon') }}

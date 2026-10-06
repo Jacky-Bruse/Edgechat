@@ -224,6 +224,15 @@ export const D1_MIGRATIONS = [
     file: "worker/migrations/2026-10-05-users-login-history.sql",
     artifacts: ["column:user_login_info.id", "column:user_login_info.ip", "column:user_login_info.login_at", "index:idx_user_login_info_recent", "trigger:limit_user_login_info"],
   },
+  {
+    id: "2026-10-06-rbac",
+    file: "worker/migrations/2026-10-06-rbac.sql",
+    artifacts: ["column:users.is_super_admin", "column:users.management_protected", "column:users.authz_version",
+      "table:rbac_roles", "table:rbac_role_permissions", "table:rbac_user_roles", "table:admin_write_guard", "table:admin_audit_log",
+      "index:idx_rbac_members", "index:idx_admin_audit_time", "trigger:limit_admin_audit", "trigger:assign_new_user_rbac",
+      "trigger:protect_default_rbac_update", "trigger:protect_default_rbac_delete", "trigger:protect_default_rbac_permissions",
+      "trigger:protect_super_rbac_assignment", "trigger:protect_last_super_update", "trigger:protect_last_super_delete"],
+  },
 ];
 
 // b3f6855 曾发布、0c13e8f 已撤回的迁移：仅识别历史 ledger，不要求新安装创建废弃表，也不删除旧数据。

@@ -2,6 +2,7 @@ import { getStealthSettings } from '../data/stealth-settings.ts';
 import { validateSession } from '../session.js';
 import { cookieRequestAllowed, extractSessionToken } from '../session-cookie.ts';
 import { gatePage, notFound, privateHeaders, submitGate } from './gate.ts';
+import { errorResponse, v1ErrorResponse } from '../utils.js';
 
 function privateResponse(response: Response) {
   // WebSocket 101 不能重建为普通 Response，否则会丢失运行时 webSocket 句柄。
@@ -88,6 +89,9 @@ export function createSiteEntry(dispatch) {
     } catch (error) {
       console.error('Request failed', error);
       // 设置读取异常时也不能回退到公开 SPA；故障页面不携带应用异常或云平台信息。
+      const path = new URL(request.url).pathname;
+      if (path.startsWith('/api/v1/')) return privateResponse(v1ErrorResponse('temporarily_unavailable', '权限服务暂不可用', 503));
+      if (path.startsWith('/api/')) return privateResponse(errorResponse('权限服务暂不可用', 503));
       return new Response('Service Unavailable', { status: 503, headers: privateHeaders });
     }
   };

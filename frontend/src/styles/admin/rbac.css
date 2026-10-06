@@ -1,0 +1,16 @@
+.rbac-page { min-width: 0; }
+.rbac-description { max-width: 320px; white-space: normal; overflow-wrap: anywhere; margin: 4px 0; }
+.rbac-editor, .rbac-members, .rbac-audit { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border-color); }
+.rbac-fields, .rbac-permissions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-bottom: 20px; }
+.rbac-permissions fieldset { border: 1px solid var(--border-color); border-radius: 6px; min-width: 0; padding: 12px 16px; }
+.rbac-permissions legend { font-weight: 600; font-size: 15px; padding: 0 4px; }
+.rbac-permission, .rbac-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 8px 0; cursor: pointer; }
+.rbac-permission input, .rbac-check input { width: 18px; height: 18px; margin-top: 3px; flex-shrink: 0; }
+.rbac-permission span { min-width: 0; overflow-wrap: anywhere; }
+.rbac-permission strong { font-size: 14px; font-weight: 600; }
+.rbac-permission small { display: block; font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-top: 3px; }
+.rbac-member { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+.rbac-pagination { margin-top: 12px; }
+.rbac-page .inline-actions { flex-wrap: wrap; }
+.rbac-page h3 { font-size: 18px; }
+@media (max-width: 600px) { .rbac-fields, .rbac-permissions { grid-template-columns: minmax(0, 1fr); } }

@@ -13,7 +13,7 @@ import { BIO_MAX_LENGTH, bioLength, normalizeBio } from '../../../shared/user-pr
 const router = useRouter();
 const { t } = useI18n();
 const session = computed(() => store.session);
-const showAdminEntry = computed(() => Boolean(session.value?.isAdmin));
+const showAdminEntry = computed(() => Boolean(session.value?.canAccessAdmin));
 
 const profileForm = reactive({
   displayName: session.value?.displayName || '',

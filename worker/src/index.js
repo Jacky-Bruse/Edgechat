@@ -19,6 +19,8 @@ import { listActiveUsers } from './data/users.js';
 import { ApiError } from './errors.js';
 import { adminMiddleware, authMiddleware } from './middleware.js';
 import { registerAdminRoutes } from './api/admin.js';
+import { registerRbacRoutes } from './api/rbac.ts';
+import { registerStorageRoutes } from './api/storage.ts';
 import { registerMaintenanceRoutes } from './api/maintenance.ts';
 import { registerStealthRoutes } from './api/stealth.ts';
 import { createSiteEntry } from './stealth/entry.ts';
@@ -114,6 +116,7 @@ app.get('/api/register-links/:token', async (c) => {
 app.post('/api/register-links/:token/register', async (c) => {
   const token = String(c.req.param('token') || '').trim();
   const payload = await parseJsonRequest(c.req.raw);
+  if (Object.keys(payload).some((key) => !['username', 'displayName', 'password'].includes(key))) return errorResponse('请求包含不允许修改的字段');
   const username = String(payload.username || '').trim();
   const password = String(payload.password || '');
   const displayName = String(payload.displayName || username).trim();
@@ -291,6 +294,8 @@ registerUserProfileRoutes(app);
 registerUploadRoutes(app);
 registerChannelRoutes(app);
 registerAdminRoutes(app);
+registerRbacRoutes(app);
+registerStorageRoutes(app);
 registerMaintenanceRoutes(app);
 registerStealthRoutes(app);
 registerTelegramAdminRoutes(app);

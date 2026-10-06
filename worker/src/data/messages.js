@@ -177,7 +177,7 @@ const MESSAGE_SELECT = `SELECT
 			  m.mention_user_ids, m.reply_to_message_id, m.reply_to_sender_id, m.created_at,
 		  u.id AS sender_id, u.username AS sender_username,
 		  u.display_name AS sender_display_name, u.avatar_key AS sender_avatar_key,
-		  u.is_admin AS sender_is_admin, u.is_disabled AS sender_is_disabled,
+		  u.is_super_admin AS sender_is_admin, u.is_disabled AS sender_is_disabled,
 		  u.disabled_until AS sender_disabled_until,
 		  reply.id AS reply_message_id, reply.content AS reply_content,
 		  reply.deleted_at AS reply_deleted_at,

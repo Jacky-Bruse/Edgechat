@@ -39,13 +39,13 @@ function createMeasuredD1(database) {
 		metrics,
 		db: {
 			prepare(sql) {
-				const inner = base.prepare(sql);
+				let inner = base.prepare(sql);
 				const wrapped = {
-					inner,
+					get inner() { return inner; },
 					sql: String(sql),
 					bind(...values) {
 						metrics.maxBindings = Math.max(metrics.maxBindings, values.length);
-						inner.bind(...values);
+						inner = inner.bind(...values);
 						return this;
 					},
 					async all() {
@@ -283,11 +283,11 @@ test("消息预检查后发生完整 GC，实际提交路径返回附件不可�
 	const base = createD1Adapter(database);
 	const racingDb = {
 		prepare(sql) {
-			const statement = base.prepare(sql);
+			let statement = base.prepare(sql);
 			const isMessageInsert = String(sql).includes("INSERT INTO messages");
 			return {
 				bind(...values) {
-					statement.bind(...values);
+					statement = statement.bind(...values);
 					return this;
 				},
 				all() {
@@ -471,13 +471,13 @@ test("硬删除用户前先持久化其 R2 清理任务", async () => {
 	const failingDb = {
 		...baseDb,
 		prepare(sql) {
-			const statement = baseDb.prepare(sql);
+			let statement = baseDb.prepare(sql);
 			const failMetadataDelete =
 				String(sql).includes("DELETE FROM uploaded_files") &&
 				String(sql).includes("owner_user_id IN");
 			return {
 				bind(...values) {
-					statement.bind(...values);
+					statement = statement.bind(...values);
 					return this;
 				},
 				all() {

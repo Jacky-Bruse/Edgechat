@@ -1,6 +1,4 @@
 import { hashPassword } from '../auth.js';
-import { listAdminChannels } from '../data/channels.js';
-import { listAdminDms } from '../data/dm-queries.js';
 import { ensureGeneralChannelMembership } from '../data/general-channel.js';
 import {
   createRegistrationInvite,
@@ -10,57 +8,24 @@ import {
 } from '../data/registration-invites.js';
 import { getSiteSettings, updateSiteSettings } from '../data/site-settings.js';
 import { isR2ObjectUnavailableError } from '../data/uploaded-files.js';
-import { listAdminUsers, listStorageOwners } from '../data/users.js';
+import { listAdminUsers } from '../data/users.js';
 import { getAdminUserDetails } from '../data/user-login-info.ts';
 import { ApiError } from '../errors.js';
-import { summarizeR2Objects } from '../storage-statistics.js';
 import { errorResponse, parseJsonRequest, randomToken } from '../utils.js';
 import { banExpiryFromMinutes } from '../user-status.js';
-
-const STORAGE_SCAN_PAGE_SIZE = 1000;
+import { hasPermission } from '../../../shared/admin-permissions.ts';
+import { runAuthorizedBatch } from '../rbac/authorization.ts';
 
 export function registerAdminRoutes(app) {
-  app.get('/api/admin/storage/scan', async (c) => {
-    if (!c.env.FILES) {
-      return errorResponse('当前部署没有绑定 R2，无法统计存储空间', 503);
-    }
-
-    const cursor = new URL(c.req.url).searchParams.get('cursor') || undefined;
-    const listed = await c.env.FILES.list({
-      limit: STORAGE_SCAN_PAGE_SIZE,
-      ...(cursor ? { cursor } : {}),
-      include: []
-    });
-    const response = {
-      items: summarizeR2Objects(listed.objects),
-      scannedObjects: listed.objects.length,
-      truncated: listed.truncated,
-      cursor: listed.truncated ? listed.cursor : null
-    };
-
-    if (!cursor) {
-      response.users = await listStorageOwners(c.env.DB);
-    }
-
-    c.header('Cache-Control', 'private, no-store');
-    return c.json(response);
-  });
-
   app.get('/api/admin/overview', async (c) => {
-    const [users, channels, dms, site] = await Promise.all([
-      listAdminUsers(c.env.DB),
-      // overview 没有头像字段，显式关闭 projection，避免悄然扩大既有响应 interface。
-      listAdminChannels(c.env.DB, { includeAvatar: false }),
-      listAdminDms(c.env.DB),
-      getSiteSettings(c.env.DB)
-    ]);
-
-    return c.json({
-      site,
-      users,
-      channels,
-      dms
-    });
+    const stats = await c.env.DB.prepare(`SELECT
+      (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users,
+      (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL AND is_disabled = 0 AND (disabled_until IS NULL OR disabled_until <= CURRENT_TIMESTAMP)) AS activeUsers,
+      (SELECT COUNT(*) FROM channels WHERE deleted_at IS NULL AND kind = 'public') AS publicChannels,
+      (SELECT COUNT(*) FROM channels WHERE deleted_at IS NULL AND kind = 'private') AS privateChannels,
+      (SELECT COUNT(*) FROM channels WHERE deleted_at IS NULL AND kind = 'dm') AS dms,
+      (SELECT COUNT(*) FROM messages WHERE deleted_at IS NULL) AS messages`).first();
+    return c.json({ stats, site: await getSiteSettings(c.env.DB) });
   });
 
   app.get('/api/admin/site-settings', async (c) => {
@@ -94,7 +59,10 @@ export function registerAdminRoutes(app) {
 
   app.get('/api/admin/register-links', async (c) => {
     const invites = await listActiveRegistrationInvites(c.env.DB);
-    return c.json({ invites });
+    return c.json({ invites: invites.slice(0, 100).map((invite) => {
+      if (!hasPermission(c.get('session'), 'invites.create')) { const { token, ...summary } = invite; return summary; }
+      return invite;
+    }) });
   });
 
   app.post('/api/admin/register-links', async (c) => {
@@ -133,7 +101,9 @@ export function registerAdminRoutes(app) {
   });
 
   app.get('/api/admin/users', async (c) => {
-    const users = await listAdminUsers(c.env.DB);
+    const offset = Number(c.req.query('offset') || 0);
+    if (!Number.isSafeInteger(offset) || offset < 0) return errorResponse('分页参数无效');
+    const users = await listAdminUsers(c.env.DB, offset, c.get('session'));
     return c.json({ users });
   });
 
@@ -143,7 +113,7 @@ export function registerAdminRoutes(app) {
     if (!/^[1-9]\d*$/.test(rawId) || !Number.isSafeInteger(userId)) {
       return errorResponse('用户不存在', 404);
     }
-    const user = await getAdminUserDetails(c.env.DB, userId);
+    const user = await getAdminUserDetails(c.env.DB, userId, c.get('session'));
     if (!user) return errorResponse('用户不存在', 404);
     c.header('Cache-Control', 'private, no-store');
     return c.json({ user });
@@ -160,17 +130,22 @@ export function registerAdminRoutes(app) {
     }
 
     const hashed = await hashPassword(password);
-    const result = await c.env.DB.prepare(
+    const db = c.get('authorizationDatabase');
+    const statements = [db.prepare(
       `INSERT INTO users (
          username,
          display_name,
          password_hash,
          password_salt
        ) VALUES (?, ?, ?, ?)`
-    )
-      .bind(username, displayName, hashed.hash, hashed.salt)
-      .run()
-      .catch((error) => {
+    ).bind(username, displayName, hashed.hash, hashed.salt)];
+    if ('roleId' in payload) {
+      const roleId = Number(payload.roleId);
+      if (!Number.isSafeInteger(roleId) || roleId < 1) return errorResponse('用户组无效');
+      statements.push(db.prepare('UPDATE rbac_user_roles SET role_id = ?, assigned_by = ? WHERE user_id = (SELECT id FROM users WHERE username = ?)').bind(roleId, c.get('session').userId, username));
+      statements.push(db.prepare('UPDATE users SET management_protected = CASE WHEN ? != 1 THEN 1 ELSE 0 END WHERE username = ?').bind(roleId, username));
+    }
+    const [result] = await runAuthorizedBatch(db, c.get('authorizationContext'), statements, undefined, { username, roleId: payload.roleId || 1 }).catch((error) => {
         if (String(error.message).includes('UNIQUE')) {
           throw new ApiError('用户名已存在');
         }

@@ -28,6 +28,10 @@ export function useUnreadInbox({
 			return openInboxConnection(handlers);
 		},
 		onMessage(payload) {
+          if (payload.type === 'authorization_changed') {
+            globalThis.window?.dispatchEvent(new Event('authorization-changed'));
+            return;
+          }
 				if (payload.type?.startsWith('call_')) {
 					onCallEvent(payload);
 					return;

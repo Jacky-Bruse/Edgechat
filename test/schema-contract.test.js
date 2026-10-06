@@ -110,10 +110,10 @@ test("full schema executes baseline migration plan into ledger and passes system
   });
   assert.equal(result.status, 'ok');
   assert.ok(result.checks.every((check) => check.status === 'ok'));
-  db.exec('DROP INDEX idx_messages_reply_attention; DROP TRIGGER clear_pin_after_message_soft_delete; ALTER TABLE users DROP COLUMN disabled_until;');
+  db.exec('DROP INDEX idx_messages_reply_attention; DROP TRIGGER clear_pin_after_message_soft_delete; DROP TRIGGER protect_last_super_update; DROP TRIGGER protect_last_super_delete; ALTER TABLE users DROP COLUMN disabled_until;');
   const drift = await inspectSchema(async (sql) => rows(db, sql), manifest);
   assert.equal(drift.status, 'drift');
-  assert.deepEqual(drift.missingArtifacts.sort(), ['column:users.disabled_until', 'index:idx_messages_reply_attention', 'trigger:clear_pin_after_message_soft_delete']);
+  assert.deepEqual(drift.missingArtifacts.sort(), ['column:users.disabled_until', 'index:idx_messages_reply_attention', 'trigger:clear_pin_after_message_soft_delete', 'trigger:protect_last_super_delete', 'trigger:protect_last_super_update']);
   db.close();
 });
 

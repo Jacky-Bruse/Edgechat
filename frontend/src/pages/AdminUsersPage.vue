@@ -6,6 +6,10 @@ import UserBanDialog from '../components/admin/UserBanDialog.vue';
 import UiButton from '../components/ui/Button.vue';
 import UiSurface from '../components/ui/Surface.vue';
 import { formatDateTime, t } from '../i18n.js';
+import { can } from '../authorization.ts';
+import store from '../store.js';
+import UserGroupAssignment from '../components/admin/UserGroupAssignment.vue';
+import { useUserGroupOptions } from '../composables/useUserGroupOptions.ts';
 
 const loading = ref(false);
 const error = ref('');
@@ -16,6 +20,15 @@ const banError = ref('');
 const UserDetailsDialog = defineAsyncComponent(() => import('../components/admin/UserDetailsDialog.vue'));
 const detailsUser = ref(null);
 const detailsOpened = ref(false);
+const { roles, hasMore, loading: rolesLoading, error: rolesError, loadMore } = useUserGroupOptions();
+const offset = ref(0);
+function canTarget(user) { return Boolean(store.session?.isSuperAdmin || (!user.managementProtected && !user.canAccessAdmin && !user.isSuperAdmin)); }
+async function editProfile(user) {
+  const displayName = window.prompt(t('auth.displayName'), user.displayName);
+  if (!displayName?.trim()) return;
+  try { await api.updateUser(user.id, { displayName: displayName.trim() }); await loadUsers(); } catch (e) { error.value = e.message; }
+}
+async function userPage(direction) { offset.value += direction * 100; await loadUsers(); }
 
 function openDetails(user) {
   detailsOpened.value = true;
@@ -26,7 +39,7 @@ async function loadUsers() {
   loading.value = true;
   error.value = '';
   try {
-    const usersPayload = await api.adminUsers();
+    const usersPayload = await api.adminUsers(offset.value);
     users.value = usersPayload.users;
   } catch (currentError) {
     error.value = currentError.message;
@@ -67,8 +80,7 @@ async function disableUser(durationMinutes) {
 }
 
 async function enableUser(user) {
-  await api.updateUser(user.id, { isDisabled: false });
-  await loadUsers();
+  try { await api.updateUser(user.id, { isDisabled: false }); await loadUsers(); } catch (e) { error.value = e.message; }
 }
 
 function userStatus(user) {
@@ -84,18 +96,22 @@ async function resetPassword(user) {
   if (!password) {
     return;
   }
-  await api.resetPassword(user.id, password);
+  try { await api.resetPassword(user.id, password); } catch (e) { error.value = e.message; }
 }
 
 async function removeUser(user) {
   if (!window.confirm(t('users.confirmDelete', { name: user.displayName }))) {
     return;
   }
-  await api.deleteUser(user.id);
-  await loadUsers();
+  try { await api.deleteUser(user.id); await loadUsers(); } catch (e) { error.value = e.message; }
 }
 
-onMounted(loadUsers);
+onMounted(async () => {
+  await loadUsers();
+  if (store.session?.isSuperAdmin) {
+    await loadMore();
+  }
+});
 </script>
 
 <template>
@@ -111,7 +127,7 @@ onMounted(loadUsers);
     </header>
 
     <div class="admin-section__body">
-      <p v-if="error" class="error-text">{{ error }}</p>
+      <p v-if="error || rolesError" class="error-text">{{ error || rolesError }}</p>
 
       <UiSurface class="panel panel--table">
         <h3 class="panel-title">{{ t('users.list') }}</h3>
@@ -136,20 +152,23 @@ onMounted(loadUsers);
                 <td>
                   <strong>{{ user.displayName }}</strong>
                   <div class="muted">@{{ user.username }}</div>
+                  <div class="muted">{{ t(user.isSuperAdmin ? 'rbac.superAdmin' : user.canAccessAdmin ? 'rbac.subAdmin' : 'rbac.ordinary') }} · {{ user.role?.id === 1 ? t('rbac.ordinary') : user.role?.name }}<span v-if="user.role && !user.role.enabled"> · {{ t('rbac.disabled') }}</span><span v-if="user.managementProtected"> · {{ t('rbac.protected') }}</span></div>
+                  <UserGroupAssignment v-if="store.session?.isSuperAdmin" :key="`${user.id}:${user.authzVersion}`" :user="user" :roles="roles" :has-more-roles="hasMore" :roles-loading="rolesLoading" @more-roles="loadMore" @changed="loadUsers" />
                 </td>
                 <td>{{ userStatus(user) }}</td>
                 <td>{{ formatDateTime(user.createdAt) }}</td>
                 <td>
                   <div class="inline-actions">
-                    <UiButton v-if="user.isDisabled" variant="secondary" size="sm" @click="enableUser(user)">
+                    <UiButton v-if="can('users.ban') && canTarget(user) && user.isDisabled" variant="secondary" size="sm" @click="enableUser(user)">
                       {{ t('users.enable') }}
                     </UiButton>
-                    <UiButton v-else variant="destructive" size="sm" @click="openBanDialog(user)">
+                    <UiButton v-else-if="can('users.ban') && canTarget(user) && user.id !== store.session?.userId" variant="destructive" size="sm" @click="openBanDialog(user)">
                       {{ t('users.disable') }}
                     </UiButton>
-                    <UiButton variant="secondary" size="sm" @click="resetPassword(user)">{{ t('users.resetPassword') }}</UiButton>
-                    <UiButton variant="destructive" size="sm" @click="removeUser(user)">{{ t('common.delete') }}</UiButton>
-                    <UiButton variant="secondary" size="sm" class="user-details-trigger" :title="t('users.details.open')" :aria-label="t('users.details.open')" @click="openDetails(user)">
+                    <UiButton v-if="can('users.profile.update') && canTarget(user)" variant="secondary" size="sm" @click="editProfile(user)">{{ t('common.edit') }}</UiButton>
+                    <UiButton v-if="store.session?.isSuperAdmin" variant="secondary" size="sm" @click="resetPassword(user)">{{ t('users.resetPassword') }}</UiButton>
+                    <UiButton v-if="can('users.delete') && canTarget(user) && user.id !== store.session?.userId" variant="destructive" size="sm" @click="removeUser(user)">{{ t('common.delete') }}</UiButton>
+                    <UiButton v-if="can('users.login_history.read') && canTarget(user)" variant="secondary" size="sm" class="user-details-trigger" :title="t('users.details.open')" :aria-label="t('users.details.open')" @click="openDetails(user)">
                       <UserRoundSearch :size="18" aria-hidden="true" />
                     </UiButton>
                   </div>
@@ -159,6 +178,7 @@ onMounted(loadUsers);
           </table>
         </div>
       </UiSurface>
+      <div class="inline-actions"><UiButton variant="secondary" :disabled="loading || offset === 0" @click="userPage(-1)">{{ t('rbac.previous') }}</UiButton><UiButton variant="secondary" :disabled="loading || users.length < 100" @click="userPage(1)">{{ t('rbac.next') }}</UiButton></div>
     </div>
 
     <UserBanDialog

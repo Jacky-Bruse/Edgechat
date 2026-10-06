@@ -50,6 +50,7 @@ async function request(path, options = {}) {
       && !contentType.includes('application/json'))) && typeof window !== 'undefined') {
       dispatchAuthInvalid(error.message);
     }
+    if (response.status === 403 && path.startsWith('/admin/') && typeof window !== 'undefined') window.dispatchEvent(new Event('authorization-changed'));
 
     throw error;
   }
@@ -58,6 +59,16 @@ async function request(path, options = {}) {
 }
 
 export default {
+  authorization() { return request('/me/authorization'); },
+  rbacRoles(offset = 0) { return request(`/admin/rbac/roles?offset=${offset}`); },
+  rbacPermissions() { return request('/admin/rbac/permissions'); },
+  rbacMembers(id, offset = 0) { return request(`/admin/rbac/roles/${id}/members?offset=${offset}`); },
+  saveRbacRole(id, body) { return request(`/admin/rbac/roles${id ? `/${id}` : ''}`, { method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body }); },
+  deleteRbacRole(id) { return request(`/admin/rbac/roles/${id}`, { method: 'DELETE' }); },
+  assignRbacRole(id, body) { return request(`/admin/rbac/users/${id}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body }); },
+  unprotectUser(id, expectedAuthzVersion) { return request(`/admin/rbac/users/${id}/unprotect`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: { expectedAuthzVersion } }); },
+  adminAudit(offset = 0) { return request(`/admin/audit?offset=${offset}`); },
+  adminStorage() { return request('/admin/storage'); },
   callConfig(roomId) {
     return request(`/calls/${roomId}/config`, { signal: AbortSignal.timeout(10000) });
   },
@@ -262,8 +273,8 @@ export default {
     }
     return resolveServerUrl(url.pathname + url.search);
   },
-  adminUsers() {
-    return request('/admin/users');
+  adminUsers(offset = 0) {
+    return request(`/admin/users?offset=${offset}`);
   },
   adminUserDetails(userId, options = {}) {
     return request(`/admin/users/${userId}/details`, options);

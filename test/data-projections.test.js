@@ -148,6 +148,8 @@ test("后台用户与频道成员 projection 保持稳定字段", async () => {
 		isPermanentlyDisabled: true,
 		disabledUntil: null,
 		createdAt: "2026-07-23",
+		isAdmin: false, isSuperAdmin: false, canAccessAdmin: false, managementProtected: false,
+    authzVersion: 0, roleRevision: 0, role: null,
 	});
 
 	const members = createQueryDb([
@@ -156,7 +158,7 @@ test("后台用户与频道成员 projection 保持稳定字段", async () => {
 			username: "alice",
 			display_name: "Alice",
 			avatar_key: null,
-			is_admin: "1",
+			is_super_admin: "1",
 			is_disabled: "0",
 			disabled_until: null,
 			role: "owner",

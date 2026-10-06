@@ -1,21 +1,23 @@
 import { deleteSession, getSession, isAdminUser, putSession } from './auth.js';
 import { isUserDisabled } from './user-status.js';
+import { AUTHORIZATION_COLUMNS, AUTHORIZATION_JOIN, authorizationFromRow } from './rbac/authorization.ts';
 
 function toNumber(value, fallback = 0) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : fallback;
 }
 
-export async function validateSession(env, token) {
+export async function validateSession(env, token, { management = false } = {}) {
   const session = await getSession(env, token);
   if (!session) {
     return { ok: false, status: 401, message: '请先登录' };
   }
 
   const { results } = await env.DB.prepare(
-    `SELECT username, is_disabled, disabled_until, deleted_at, session_version, is_admin
-     FROM users
-     WHERE id = ?
+    `SELECT u.username, u.is_disabled, u.disabled_until, u.deleted_at, u.session_version, u.is_super_admin
+       ${management ? `, ${AUTHORIZATION_COLUMNS}` : ''}
+     FROM users u ${management ? AUTHORIZATION_JOIN : ''}
+     WHERE u.id = ?
      LIMIT 1`
   )
     .bind(session.userId)
@@ -56,6 +58,8 @@ export async function validateSession(env, token) {
   const refreshed = {
     ...session,
     isAdmin: isAdminUser(env, user),
+    isSuperAdmin: Boolean(user.is_super_admin),
+    ...(management ? authorizationFromRow(user) : {}),
     sessionVersion: dbVersion
   };
 

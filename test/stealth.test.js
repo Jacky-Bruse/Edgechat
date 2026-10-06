@@ -22,7 +22,7 @@ async function fixture(enabled = true) {
   const database = new SQL.Database();
   database.exec(schema);
   database.run(
-    `INSERT INTO users (id, username, display_name, password_hash, password_salt, is_admin)
+    `INSERT INTO users (id, username, display_name, password_hash, password_salt, is_super_admin)
      VALUES (1, 'admin', 'Admin', ?, ?, 1), (2, 'member', 'Member', ?, ?, 0)`,
     [password.hash, password.salt, password.hash, password.salt],
   );
@@ -142,6 +142,7 @@ test('错误账号、错误密码、封禁账号只显示相同通用登录失�
     assert.equal(response.headers.get('set-cookie'), null);
     responses.push(await response.text());
   }
+  f.database.run('UPDATE users SET is_super_admin = 1 WHERE id = 2');
   f.database.run('UPDATE users SET is_disabled = 1 WHERE id = 1');
   const banned = await f.request(f.settings.loginPath, {
     method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -184,7 +185,7 @@ test('Cookie 写入与 WS 需要同源；有效 Bearer 客户端保持兼容', a
 test('会话撤销、封禁或 session_version 变化后不能继续读脚本与页面', async () => {
   for (const change of [
     (f) => f.env.SESSIONS.values.clear(),
-    (f) => f.database.run('UPDATE users SET is_disabled = 1 WHERE id = 1'),
+    (f) => { f.database.run('UPDATE users SET is_super_admin = 1 WHERE id = 2'); f.database.run('UPDATE users SET is_disabled = 1 WHERE id = 1'); },
     (f) => f.database.run('UPDATE users SET session_version = session_version + 1 WHERE id = 1'),
   ]) {
     const f = await fixture();

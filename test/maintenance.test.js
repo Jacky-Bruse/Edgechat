@@ -10,6 +10,9 @@ import { Scheduler } from "../worker/src/do/Scheduler.js";
 import { InstanceBridge } from "../worker/src/do/InstanceBridge.ts";
 import { VoiceCall } from "../worker/src/do/VoiceCall.ts";
 import { authMiddleware, adminMiddleware } from "../worker/src/middleware.js";
+import initSqlJs from 'sql.js';
+import { readFileSync } from 'node:fs';
+import { createD1Adapter } from './support/d1.js';
 
 const okDb = { prepare: () => ({ all: async () => ({ results: [{ ok: 1 }] }) }) };
 const ns = (response = { ok: true, service: "ChannelRoom" }) => ({ idFromName: () => "health", get: () => ({ fetch: async () => Response.json(response) }) });
@@ -86,15 +89,21 @@ test("system probes use fixed KV key, R2 limit one, and do not read payloads", a
 
 test("real auth and admin middleware return 401, 403, and allow admins", async () => {
   const app = new Hono();
+  app.onError((error) => Response.json({ error: error.status ? error.message : '服务器开小差了' }, { status: error.status || 500 }));
   app.use("/api/admin/*", authMiddleware, adminMiddleware);
   registerMaintenanceRoutes(app);
-  const db = { prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ username: "u", is_disabled: 0, deleted_at: null, session_version: 0, is_admin: 0 }] }) }) }) };
+  const SQL = await initSqlJs();
+  const database = new SQL.Database();
+  database.exec(readFileSync(new URL('../worker/schema.sql', import.meta.url), 'utf8'));
+  database.run("INSERT INTO users (username, display_name, password_hash, password_salt) VALUES ('u', 'u', 'hash', 'salt')");
+  const db = createD1Adapter(database);
   const env = { DB: db, SESSIONS: { get: async () => null } };
   assert.equal((await app.request("/api/admin/maintenance", {}, env)).status, 401);
   const session = { userId: 1, isAdmin: false, sessionVersion: 0 };
   const authorizedEnv = { ...env, SESSIONS: { get: async () => JSON.stringify(session), put: async () => {} , delete: async () => {} } };
   assert.equal((await app.request("/api/admin/maintenance", { headers: { Authorization: "Bearer token" } }, authorizedEnv)).status, 403);
-  const adminDb = { prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ username: "u", is_disabled: 0, deleted_at: null, session_version: 0, is_admin: 1 }] }) }) }) };
+  database.run('UPDATE users SET is_super_admin = 1 WHERE id = 1');
+  const adminDb = db;
   const adminEnv = { DB: adminDb, SESSIONS: { get: async () => JSON.stringify({ ...session, isAdmin: true }), put: async () => {} , delete: async () => {} } };
   const response = await app.request("/api/admin/maintenance", { headers: { Authorization: "Bearer token" } }, adminEnv);
   assert.equal(response.status, 200);

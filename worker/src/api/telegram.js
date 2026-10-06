@@ -169,7 +169,7 @@ export function registerTelegramNotificationRoutes(app) {
 
 export function registerTelegramAdminRoutes(app) {
 	app.get("/api/admin/telegram", async (c) => {
-		return c.json(await listTelegramBridgeAdminState(c.env));
+		return c.json(await listTelegramBridgeAdminState(c.env, c.get('session')));
 	});
 
 	app.put("/api/admin/telegram/config", async (c) => {
@@ -191,7 +191,7 @@ export function registerTelegramAdminRoutes(app) {
 				webhookUrl: url,
 				updatedBy: c.get("session").userId,
 			});
-			return c.json(await listTelegramBridgeAdminState(c.env));
+			return c.json(await listTelegramBridgeAdminState(c.env, c.get('session')));
 		} catch (error) {
 			return telegramApiError(error) || errorResponse("Telegram 配置保存失败", 500);
 		}
@@ -224,7 +224,7 @@ export function registerTelegramAdminRoutes(app) {
 			if (!mappingId) {
 				return errorResponse("群组不存在", 404);
 			}
-			return c.json(await listTelegramBridgeAdminState(c.env));
+			return c.json(await listTelegramBridgeAdminState(c.env, c.get('session')));
 		} catch (error) {
 			const telegramError = telegramApiError(error);
 			if (telegramError) {
@@ -245,7 +245,7 @@ export function registerTelegramAdminRoutes(app) {
 		if (!updated) {
 			return errorResponse("Telegram 映射不存在", 404);
 		}
-		return c.json(await listTelegramBridgeAdminState(c.env));
+		return c.json(await listTelegramBridgeAdminState(c.env, c.get('session')));
 	});
 
 	app.delete("/api/admin/telegram/mappings/:mappingId", async (c) => {
@@ -253,6 +253,6 @@ export function registerTelegramAdminRoutes(app) {
 		if (!deleted) {
 			return errorResponse("Telegram 映射不存在", 404);
 		}
-		return c.json(await listTelegramBridgeAdminState(c.env));
+		return c.json(await listTelegramBridgeAdminState(c.env, c.get('session')));
 	});
 }

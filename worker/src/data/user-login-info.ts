@@ -11,18 +11,19 @@ export async function recordLoginInfo(db, userId: number, request: Request, logi
   }
 }
 
-export async function getAdminUserDetails(db, userId: number) {
+export async function getAdminUserDetails(db, userId: number, actor) {
   const row = await db.prepare(`SELECT u.id, u.username, u.display_name, u.bio,
-      u.is_admin, u.created_at
+      u.is_super_admin, u.created_at
     FROM users u
-    WHERE u.id = ? AND u.deleted_at IS NULL`).bind(userId).first();
+    WHERE u.id = ? AND u.deleted_at IS NULL
+      AND (? = 1 OR (u.management_protected = 0 AND u.is_super_admin = 0))`).bind(userId, actor.isSuperAdmin ? 1 : 0).first();
   if (!row) return null;
   const { results } = await db.prepare(`SELECT id, ip, login_at, user_agent,
       webrtc_ips, webrtc_checked_at FROM user_login_info
     WHERE user_id = ? ORDER BY id DESC LIMIT 3`).bind(userId).all();
   return {
     id: row.id, username: row.username, displayName: row.display_name,
-    bio: row.bio, isAdmin: Boolean(row.is_admin), createdAt: row.created_at,
+    bio: row.bio, isAdmin: Boolean(row.is_super_admin), createdAt: row.created_at,
     loginHistory: results.map((record) => ({
       id: record.id, ip: record.ip, loginAt: record.login_at, userAgent: record.user_agent,
       webrtcIps: JSON.parse(record.webrtc_ips), webrtcCheckedAt: record.webrtc_checked_at,

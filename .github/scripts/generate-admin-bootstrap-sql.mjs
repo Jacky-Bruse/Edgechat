@@ -44,6 +44,8 @@ INSERT INTO users (
   password_hash,
   password_salt,
   is_admin,
+  is_super_admin,
+  management_protected,
   is_disabled
 )
 SELECT
@@ -52,18 +54,13 @@ SELECT
   '${safeHash}',
   '${safeSalt}',
   1,
+  1,
+  1,
   0
 WHERE NOT EXISTS (
   SELECT 1 FROM users WHERE username = '${safeUsername}'
 );
 
-UPDATE users
-SET
-  is_admin = 1,
-  is_disabled = 0,
-  deleted_at = NULL,
-  updated_at = CURRENT_TIMESTAMP
-WHERE username = '${safeUsername}';
 `.trim();
 
   const outputPath = resolve(process.cwd(), ".tmp", "edgechat-admin-upsert.sql");

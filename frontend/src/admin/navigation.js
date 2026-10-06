@@ -1,6 +1,8 @@
 import { Database, Gauge, Ghost, Link2, Send, Settings, UserCog, UserPlus, Wrench } from '@lucide/vue';
 
 export const adminNavigation = [
+  { id: 'rbac', labelKey: 'rbac.title', descriptionKey: 'rbac.description', to: '/admin/rbac', icon: UserCog },
+  { id: 'channels', labelKey: 'rbac.channels', descriptionKey: 'rbac.channelDescription', to: '/admin/channels', icon: UserCog },
   {
     id: 'dashboard',
     labelKey: 'admin.nav.dashboard',
@@ -29,8 +31,8 @@ export const adminNavigation = [
     to: '/admin/invites',
     icon: UserPlus,
     children: [
-      { id: 'create-user', labelKey: 'admin.nav.createUser', hash: '#create-user' },
-      { id: 'registration-links', labelKey: 'admin.nav.registrationLinks', hash: '#registration-links' }
+      { id: 'create-user', labelKey: 'admin.nav.createUser', hash: '#create-user', permission: 'users.create' },
+      { id: 'registration-links', labelKey: 'admin.nav.registrationLinks', hash: '#registration-links', permission: 'invites.read' }
     ]
   },
   {

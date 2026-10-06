@@ -1,15 +1,24 @@
 <script setup>
-import { computed, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import api from '../../api.js';
 import UiButton from '../ui/Button.vue';
 import UiSurface from '../ui/Surface.vue';
 import { t } from '../../i18n.js';
+import store from '../../store.js';
+import UserGroupSelect from './UserGroupSelect.vue';
+import { useUserGroupOptions } from '../../composables/useUserGroupOptions.ts';
 
 const emit = defineEmits(['created']);
 const submitting = ref(false);
 const error = ref('');
 const success = ref('');
 const form = reactive({ username: '', displayName: '', password: '' });
+const roleId = ref(1);
+const { roles, hasMore, loading: rolesLoading, error: rolesError, loadMore } = useUserGroupOptions();
+onMounted(async () => {
+  if (!store.session?.isSuperAdmin) return;
+  await loadMore();
+});
 
 const canSubmit = computed(() => Boolean(form.username && form.displayName && form.password));
 
@@ -18,7 +27,7 @@ async function submitUser() {
   error.value = '';
   success.value = '';
   try {
-    const payload = await api.createUser(form);
+    const payload = await api.createUser({ ...form, ...(store.session?.isSuperAdmin ? { roleId: roleId.value } : {}) });
     form.username = '';
     form.displayName = '';
     form.password = '';
@@ -35,7 +44,7 @@ async function submitUser() {
 <template>
   <UiSurface class="panel admin-user-creator">
     <h3 class="panel-title">{{ t('userCreator.title') }}</h3>
-    <p v-if="error" class="error-text">{{ error }}</p>
+    <p v-if="error || rolesError" class="error-text">{{ error || rolesError }}</p>
     <p v-else-if="success" class="success-text" role="status">{{ success }}</p>
     <form class="admin-user-creator__form" @submit.prevent="submitUser">
       <div class="admin-user-creator__identity-grid">
@@ -53,6 +62,9 @@ async function submitUser() {
         <input v-model="form.password" type="password" autocomplete="new-password" />
       </label>
       <div class="admin-user-creator__actions">
+        <label v-if="store.session?.isSuperAdmin" class="field"><span>{{ t('rbac.group') }}</span>
+          <UserGroupSelect v-model="roleId" :roles="roles" :has-more="hasMore" :loading="rolesLoading" @more="loadMore" />
+        </label>
         <UiButton type="submit" :disabled="submitting || !canSubmit">
           {{ submitting ? t('common.creating') : t('userCreator.title') }}
         </UiButton>

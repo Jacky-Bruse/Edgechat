@@ -47,7 +47,8 @@ test('demo backend exposes chat, contacts, admin, storage and Telegram fixture d
 	const general = await requestDemo('/channels/1/members');
 	assert.equal(general.members.find((member) => member.id === 1).isAdmin, true);
 	assert.equal(general.members.find((member) => member.id === 5).isDisabled, true);
-  assert.equal(overview.channels.length, 4);
+  assert.equal(overview.stats.publicChannels + overview.stats.privateChannels, 4);
+  assert.equal('channels' in overview, false);
   assert.equal(storage.scannedObjects, 4);
   assert.equal(storage.items.some((item) => item.ownerType === 'telegram'), true);
   assert.equal(telegram.config.configured, true);

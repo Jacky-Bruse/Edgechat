@@ -1,5 +1,7 @@
 import bridge from './instance-bridge/zh-TW.js';
+import rbac from './rbac/zh-TW.js';
 export default {
+  ...rbac,
   'call.limit': '本次通話已達到 1 小時上限，請重新呼叫。',
   'maintenance.voiceCall': 'VoiceCall DO',
   'maintenance.method.voiceCall': 'VOICE_CALL binding + 內部 health 請求',

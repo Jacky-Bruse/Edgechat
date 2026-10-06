@@ -17,48 +17,39 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api.js';
 import { formatTime, t } from '../i18n.js';
+import { canVisit, can } from '../authorization.ts';
 
 const router = useRouter();
 const loading = ref(false);
 const error = ref('');
 const refreshedAt = ref(null);
-const overview = ref({ site: null, users: [], channels: [], dms: [] });
+const overview = ref({ site: null, stats: {} });
 
 const activeUserCount = computed(
-  () => overview.value.users.filter((user) => !user.isDisabled).length
+  () => overview.value.stats.activeUsers || 0
 );
 const publicChannelCount = computed(
-  () => overview.value.channels.filter((channel) => channel.kind === 'public').length
+  () => overview.value.stats.publicChannels || 0
 );
 const privateChannelCount = computed(
-  () => overview.value.channels.filter((channel) => channel.kind === 'private').length
+  () => overview.value.stats.privateChannels || 0
 );
-const totalMessageCount = computed(() => {
-  const channelMessages = overview.value.channels.reduce(
-    (total, channel) => total + Number(channel.messageCount || 0),
-    0
-  );
-  const dmMessages = overview.value.dms.reduce(
-    (total, dm) => total + Number(dm.messageCount || 0),
-    0
-  );
-  return channelMessages + dmMessages;
-});
+const totalMessageCount = computed(() => overview.value.stats.messages || 0);
 
 const metrics = computed(() => [
-  { label: t('dashboard.metrics.users'), value: overview.value.users.length, icon: Users },
-  { label: t('dashboard.metrics.groups'), value: overview.value.channels.length, icon: MessagesSquare },
-  { label: t('dashboard.metrics.directMessages'), value: overview.value.dms.length, icon: MessageSquare },
+  { label: t('dashboard.metrics.users'), value: overview.value.stats.users || 0, icon: Users },
+  { label: t('dashboard.metrics.groups'), value: publicChannelCount.value + privateChannelCount.value, icon: MessagesSquare },
+  { label: t('dashboard.metrics.directMessages'), value: overview.value.stats.dms || 0, icon: MessageSquare },
   { label: t('dashboard.metrics.messages'), value: totalMessageCount.value, icon: Activity }
 ]);
 
 const quickLinks = computed(() => [
   { label: t('admin.nav.users'), to: '/admin/users', icon: UserCog },
-  { label: t('admin.nav.createUser'), to: '/admin/invites#create-user', icon: UserPlus },
-  { label: t('admin.nav.registrationLinks'), to: '/admin/invites#registration-links', icon: Link },
+  { label: t('admin.nav.createUser'), to: '/admin/invites#create-user', icon: UserPlus, permission: 'users.create' },
+  { label: t('admin.nav.registrationLinks'), to: '/admin/invites#registration-links', icon: Link, permission: 'invites.read' },
   { label: t('admin.nav.site'), to: '/admin/site#site-appearance', icon: Settings },
   { label: t('nav.backToChat'), to: '/', icon: Home }
-]);
+].filter((link) => link.to === '/' || (link.permission ? can(link.permission) : canVisit(link.to.split('/')[2].split('#')[0]))));
 
 const refreshedTime = computed(() => {
   if (!refreshedAt.value) {
@@ -74,9 +65,7 @@ async function loadOverview() {
     const payload = await api.adminOverview();
     overview.value = {
       site: payload.site || null,
-      users: payload.users || [],
-      channels: payload.channels || [],
-      dms: payload.dms || []
+      stats: payload.stats || {}
     };
     refreshedAt.value = new Date();
   } catch (currentError) {
@@ -168,7 +157,7 @@ onMounted(loadOverview);
             <span class="admin-icon-tile"><Users :size="20" aria-hidden="true" /></span>
             <div>
               <span>{{ t('dashboard.availableAccounts') }}</span>
-              <strong>{{ loading ? t('common.loading') : `${activeUserCount} / ${overview.users.length}` }}</strong>
+              <strong>{{ loading ? t('common.loading') : `${activeUserCount} / ${overview.stats.users || 0}` }}</strong>
             </div>
           </div>
           <div class="admin-status-list__item">

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { adminNavigation } from '../../admin/navigation.js';
 import { useI18n } from '../../i18n.js';
 import store from '../../store.js';
+import { canVisit, can, firstAdminPage } from '../../authorization.ts';
 
 const route = useRoute();
 const router = useRouter();
@@ -15,11 +16,11 @@ const mobileOpen = ref(false);
 const openGroups = ref(new Set());
 
 const localizedNavigation = computed(() =>
-  adminNavigation.map((item) => ({
+  adminNavigation.filter((item) => canVisit(item.id)).map((item) => ({
     ...item,
     label: t(item.labelKey),
     description: t(item.descriptionKey),
-    children: item.children?.map((child) => ({ ...child, label: t(child.labelKey) }))
+    children: item.children?.filter((child) => !child.permission || can(child.permission)).map((child) => ({ ...child, label: t(child.labelKey) }))
   }))
 );
 
@@ -78,7 +79,7 @@ function navigate(location) {
 <template>
   <aside class="admin-sidebar" :class="{ 'admin-sidebar--open': mobileOpen }">
     <div class="admin-sidebar__brand-row">
-      <button type="button" class="admin-brand" :aria-label="t('admin.sidebar.openDashboard')" @click="navigate('/admin/dashboard')">
+      <button type="button" class="admin-brand" :aria-label="t('admin.sidebar.openDashboard')" @click="navigate(firstAdminPage())">
         {{ t('admin.sidebar.brand') }}
       </button>
       <button
@@ -166,7 +167,7 @@ function navigate(location) {
           <CircleUserRound :size="20" aria-hidden="true" />
           <div>
             <strong>{{ adminName }}</strong>
-            <span>{{ t('admin.sidebar.superAdmin') }}</span>
+            <span>{{ t(store.session?.isSuperAdmin ? 'admin.sidebar.superAdmin' : 'rbac.subAdmin') }}</span>
           </div>
         </div>
         <div class="admin-sidebar__shortcuts">

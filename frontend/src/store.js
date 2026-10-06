@@ -159,6 +159,17 @@ async function logout() {
 function setSession(session) {
   state.session = session;
 }
+let authorizationRefresh;
+function refreshAuthorization() {
+  if (!state.session) return Promise.resolve();
+  if (!authorizationRefresh) authorizationRefresh = api.authorization().then(({ authorization }) => {
+    if (state.session) state.session = { ...state.session, ...authorization };
+  }).catch((error) => {
+    if (state.session) state.session = { ...state.session, canAccessAdmin: false, isSuperAdmin: false, permissions: [] };
+    throw error;
+  }).finally(() => { authorizationRefresh = null; });
+  return authorizationRefresh;
+}
 
 function setSite(site) {
   state.site = {
@@ -169,6 +180,7 @@ function setSite(site) {
 }
 
 if (typeof window !== 'undefined') {
+  window.addEventListener('authorization-changed', () => { void refreshAuthorization().catch(() => {}); });
   addAuthInvalidListener(() => {
     clearAuthState();
     if (isGatewayMode) window.location.replace('/');
@@ -194,5 +206,6 @@ export default {
   logout,
   setSession,
   setSite,
-  loadSite
+  loadSite,
+  refreshAuthorization
 };

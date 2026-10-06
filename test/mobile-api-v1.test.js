@@ -65,7 +65,7 @@ async function seedUser(database, username = 'alice') {
   const credentials = await hashPassword(password);
   database.run(
     `INSERT INTO users (
-       username, display_name, password_hash, password_salt, is_admin, session_version
+       username, display_name, password_hash, password_salt, is_super_admin, session_version
      ) VALUES (?, ?, ?, ?, 0, 0)`,
     [username, 'Alice', credentials.hash, credentials.salt]
   );
@@ -77,7 +77,7 @@ async function seedUser(database, username = 'alice') {
       username,
       display_name: 'Alice',
       avatar_key: null,
-      is_admin: 0,
+      is_super_admin: 0,
       session_version: 0
     }
   };

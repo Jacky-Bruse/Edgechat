@@ -68,7 +68,7 @@ const showMobileNavigation = ref(false);
 const publicGroupPreview = ref(null);
 const joiningPublicGroup = ref(false);
 const session = computed(() => store.session);
-const showAdminEntry = computed(() => Boolean(session.value?.isAdmin));
+const showAdminEntry = computed(() => Boolean(session.value?.canAccessAdmin));
 const isContactsView = computed(() => route.name === 'contacts');
 const contactsVisited = ref(isContactsView.value);
 const inboxActiveRoom = computed(() => isContactsView.value ? null : activeRoom.value);
@@ -196,10 +196,10 @@ const { connectUnreadInbox, disconnectUnreadInbox } = useUnreadInbox({
 const wsConnected = computed(() => wsStatus.value === 'open');
 const activeRoomSubtitle = computed(() => roomSubtitle(activeRoom.value, wsConnected.value));
 const canModerateMessages = computed(
-  () => Boolean(session.value?.isAdmin || canManageActiveRoom.value)
+  () => Boolean(activeRoom.value?.kind !== 'dm' && canManageActiveRoom.value)
 );
 const canPinMessages = computed(
-  () => Boolean(activeRoom.value?.kind !== 'dm' && (session.value?.isAdmin || canManageActiveRoom.value))
+  () => Boolean(activeRoom.value?.kind !== 'dm' && canManageActiveRoom.value)
 );
 const {
   messageMenu,

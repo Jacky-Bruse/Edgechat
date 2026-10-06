@@ -5,6 +5,7 @@ import api from '../../api.js';
 import UiButton from '../ui/Button.vue';
 import UiSurface from '../ui/Surface.vue';
 import { formatDate, formatDateTime, t } from '../../i18n.js';
+import { can } from '../../authorization.ts';
 
 const loading = ref(false);
 const error = ref('');
@@ -110,7 +111,7 @@ onMounted(loadInvites);
     </header>
     <p v-if="error" class="error-text">{{ error }}</p>
 
-    <UiSurface class="invite-create-panel">
+    <UiSurface v-if="can('invites.create')" class="invite-create-panel">
       <form class="invite-create-form" @submit.prevent="createInvite">
         <label class="field invite-create-form__note">
           <span class="sr-only">{{ t('invites.noteLabel') }}</span>
@@ -152,7 +153,7 @@ onMounted(loadInvites);
             {{ inviteStatusLabel(invite) }}
           </span>
         </div>
-        <div class="admin-invite-card__url">{{ inviteLinkUrl(invite.token) }}</div>
+        <div v-if="invite.token" class="admin-invite-card__url">{{ inviteLinkUrl(invite.token) }}</div>
         <p class="admin-invite-card__usage">
           {{ t('invites.usage', { used: invite.usedCount, max: invite.maxUses }) }}
           <span class="admin-invite-card__remaining">{{ t('invites.remaining', { count: invite.remainingUses }) }}</span>
@@ -173,6 +174,7 @@ onMounted(loadInvites);
           </div>
           <div class="admin-invite-card__actions">
             <UiButton
+              v-if="invite.token"
               variant="secondary"
               size="sm"
               :title="copiedInviteId === invite.id ? t('invites.linkCopiedTitle') : t('invites.copyLinkTitle')"
@@ -181,7 +183,7 @@ onMounted(loadInvites);
               <Copy :size="15" aria-hidden="true" />
               {{ copiedInviteId === invite.id ? t('invites.copied') : t('invites.copy') }}
             </UiButton>
-            <details v-if="invite.isAvailable" class="admin-invite-menu">
+            <details v-if="invite.isAvailable && can('invites.revoke')" class="admin-invite-menu">
               <summary class="admin-invite-menu__trigger" :title="t('common.moreActions')" :aria-label="t('common.moreActions')">
                 <Ellipsis :size="18" aria-hidden="true" />
               </summary>

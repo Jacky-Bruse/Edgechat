@@ -1,10 +1,8 @@
 export function createD1Adapter(database) {
-  function prepare(sql) {
-    let bindings = [];
+	function prepare(sql, bindings = []) {
     return {
       bind(...values) {
-        bindings = values;
-        return this;
+				return prepare(sql, values);
       },
       async all() {
         const statement = database.prepare(sql);
