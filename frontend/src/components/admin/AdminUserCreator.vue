@@ -62,9 +62,9 @@ async function submitUser() {
         <input v-model="form.password" type="password" autocomplete="new-password" />
       </label>
       <div class="admin-user-creator__actions">
-        <label v-if="store.session?.isSuperAdmin" class="field"><span>{{ t('rbac.group') }}</span>
+        <div v-if="store.session?.isSuperAdmin" class="field"><span>{{ t('rbac.group') }}</span>
           <UserGroupSelect v-model="roleId" :roles="roles" :has-more="hasMore" :loading="rolesLoading" @more="loadMore" />
-        </label>
+        </div>
         <UiButton type="submit" :disabled="submitting || !canSubmit">
           {{ submitting ? t('common.creating') : t('userCreator.title') }}
         </UiButton>
