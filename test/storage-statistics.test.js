@@ -16,11 +16,11 @@ import { registerStorageRoutes } from '../worker/src/api/storage.ts';
 function storageScanHandler() {
   let handler;
   const app = {
-    get(path, candidate) {
+    get() {},
+    post(path, candidate) {
       if (path === '/api/admin/storage/scan') handler = candidate;
     },
     patch() {},
-    post() {},
     delete() {}
   };
   registerStorageRoutes(app);

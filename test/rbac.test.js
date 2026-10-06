@@ -29,7 +29,7 @@ async function harness() {
     const response = await worker.fetch(new Request(`https://rbac.test/api${path}`, { method,
       headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json', ...headers },
       ...(body ? { body: JSON.stringify(body) } : {}) }), env, { waitUntil(promise) { promise.catch(() => {}); } });
-    return { status: response.status, body: await response.json() };
+    return { status: response.status, body: await response.json(), cacheControl: response.headers.get('cache-control') };
   }
   async function grant(permissions = ['users.read']) {
     const result = await request('/admin/rbac/roles', { name: 'reviewers', description: '', permissions }); assert.equal(result.status, 200);
@@ -199,6 +199,8 @@ test('RBAC：Cookie 同源、管理 query token 与授权基础设施失败', as
   assert.equal((await h.request('/admin/rbac/roles', { name: 'cross-site', permissions: [] }, cookie)).status, 403);
   assert.equal((await h.request('/admin/rbac/roles', { name: 'same-site', permissions: [] }, { ...cookie, headers: { ...cookie.headers, Origin: 'https://rbac.test' } })).status, 200);
   assert.equal((await h.request(`/admin/users?token=${h.root.token}`, null, { token: '' })).status, 401);
+  assert.equal((await h.request('/admin/users', null, { token: '' })).cacheControl, 'private, no-store');
+  assert.equal((await h.request('/admin/storage/scan', {}, cookie)).status, 403);
   h.env.DB = { prepare() { throw new Error('D1 offline details'); } };
   const result = await h.request('/admin/users');
   assert.equal(result.status, 503); assert.doesNotMatch(JSON.stringify(result.body), /offline details|stack/);
@@ -228,14 +230,15 @@ test('RBAC：存储只读快照、扫描限速与撤权后继续扫描拒绝', a
   let lists = 0;
   h.env.FILES = { list: async () => { lists++; return { objects: [{ key: '3/secret.txt', size: 20, uploaded: new Date() }], truncated: false }; } };
   const delegate = { token: h.delegate.token };
-  const first = await h.request('/admin/storage/scan', null, delegate);
+  assert.equal((await h.request('/admin/storage/scan', null, delegate)).status, 403);
+  const first = await h.request('/admin/storage/scan', {}, delegate);
   assert.equal(first.status, 200); assert.equal(JSON.stringify(first.body).includes('secret.txt'), false);
-  assert.equal((await h.request('/admin/storage/scan', null, delegate)).status, 409);
+  assert.equal((await h.request('/admin/storage/scan', {}, delegate)).status, 409);
   assert.equal(lists, 1);
   const snapshot = await h.request('/admin/storage', null, delegate);
   assert.ok(snapshot.body.scannedAt); assert.equal(JSON.stringify(snapshot.body).includes('secret.txt'), false);
   h.database.run('UPDATE rbac_roles SET enabled = 0 WHERE id = ?', [role.id]);
-  assert.equal((await h.request('/admin/storage/scan?cursor=old', null, delegate)).status, 403);
+  assert.equal((await h.request('/admin/storage/scan?cursor=old', {}, delegate)).status, 403);
   assert.equal(lists, 1);
 });
 

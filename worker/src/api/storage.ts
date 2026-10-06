@@ -8,7 +8,7 @@ export function registerStorageRoutes(app) {
     const row = await c.env.DB.prepare("SELECT setting_value FROM site_settings WHERE setting_key = 'admin_storage_snapshot'").first();
     return c.json(row ? JSON.parse(row.setting_value) : { items: [], users: [], scannedAt: null });
   });
-  app.get('/api/admin/storage/scan', async (c) => {
+  app.post('/api/admin/storage/scan', async (c) => {
     if (!c.env.FILES) throw new ApiError('当前部署没有绑定 R2，无法统计存储空间', 503);
     const cursor = c.req.query('cursor') || '';
     const key = `storage-scan:${c.get('session').userId}`;

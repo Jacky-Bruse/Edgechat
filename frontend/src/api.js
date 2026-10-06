@@ -291,7 +291,7 @@ export default {
       query.set('cursor', cursor);
     }
     const suffix = query.size ? `?${query.toString()}` : '';
-    return request(`/admin/storage/scan${suffix}`);
+    return request(`/admin/storage/scan${suffix}`, { method: 'POST', body: '{}' });
   },
   adminSiteSettings() {
     return request('/admin/site-settings');

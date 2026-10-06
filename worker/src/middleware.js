@@ -6,6 +6,7 @@ import { authorizedDatabase, checkPolicy, policyAssertion, runAuthorizedBatch } 
 import { ApiError } from './errors.js';
 
 export async function authMiddleware(c, next) {
+  if (new URL(c.req.url).pathname.startsWith('/api/admin/')) c.header('Cache-Control', 'private, no-store');
   if (!cookieRequestAllowed(c.req.raw)) return errorResponse('请求被拒绝', 403);
   const token = extractSessionToken(c.req.raw);
   const path = new URL(c.req.url).pathname;

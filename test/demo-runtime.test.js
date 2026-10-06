@@ -32,7 +32,7 @@ test('demo backend exposes chat, contacts, admin, storage and Telegram fixture d
 		requestDemo('/bootstrap'),
 		requestDemo('/contacts'),
     requestDemo('/admin/overview'),
-    requestDemo('/admin/storage/scan'),
+    requestDemo('/admin/storage/scan', { method: 'POST', body: '{}' }),
     requestDemo('/admin/telegram')
   ]);
 

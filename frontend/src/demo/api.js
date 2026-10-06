@@ -458,7 +458,7 @@ async function handleDemoRequest(path, options = {}) {
   if (method === 'GET' && pathname === '/admin/maintenance') {
     return demoMaintenanceReport();
   }
-  if (method === 'GET' && pathname === '/admin/storage/scan') {
+  if (method === 'POST' && pathname === '/admin/storage/scan') {
     return cloneDemo(adminStoragePayload());
   }
   if (method === 'GET' && pathname === '/admin/storage') return { ...cloneDemo(adminStoragePayload()), scannedAt: new Date().toISOString() };

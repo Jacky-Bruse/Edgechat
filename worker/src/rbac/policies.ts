@@ -18,7 +18,7 @@ export const ADMIN_POLICIES = [
   policy('channels.list', 'GET', 'channels', ['channels.read']),
   policy('channels.delete', 'DELETE', 'channels/([1-9]\\d*)', ['channels.delete'], { audit: true }),
   policy('dms.list', 'GET', 'dms', [], { superOnly: true }),
-  policy('storage.scan', 'GET', 'storage/scan', ['storage.scan']),
+  policy('storage.scan', 'POST', 'storage/scan', ['storage.scan'], { fields: [], audit: true }),
   policy('storage.read', 'GET', 'storage', ['storage.read']),
   policy('site.read', 'GET', 'site-settings', ['site.read']),
   policy('site.update', 'PATCH', 'site-settings', ['site.appearance.update'], { fields: ['siteName', 'siteIconUrl'], audit: true }),
