@@ -94,6 +94,7 @@ test("窄屏演示导航避开输入区和聊天覆盖层", () => {
 	for (const selector of [
 		"body:has(.room-management-layer) .demo-navigator",
 		"body:has(.composer-rich-editor) .demo-navigator",
+		"body:has(.composer-attachment) .demo-navigator",
 		"body:has(.composer-reply) .demo-navigator",
 	]) {
 		assert.ok(demoNavigator.includes(selector), `演示导航缺少避让规则：${selector}`);

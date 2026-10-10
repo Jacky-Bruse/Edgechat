@@ -212,6 +212,7 @@ function resetDemo() {
   /* 成员管理使用整屏覆盖层，演示导航不能浮在其上方抢占触控区域。 */
   body:has(.room-management-layer) .demo-navigator,
   body:has(.composer-rich-editor) .demo-navigator,
+  body:has(.composer-attachment) .demo-navigator,
   body:has(.composer-reply) .demo-navigator {
     display: none;
   }

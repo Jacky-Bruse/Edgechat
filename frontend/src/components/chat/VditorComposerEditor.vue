@@ -5,6 +5,7 @@ import type Vditor from "vditor";
 import type { EdgeChatVditorRuntime } from "../../vditor-runtime.ts";
 import type { MentionUser } from "../../mentions.ts";
 import { installVditorContentSafety } from "../../vditor-content-safety.ts";
+import { getClipboardFiles } from "./clipboard-files.js";
 
 const props = defineProps<{
 	modelValue: string;
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 	ready: [];
 	"initialization-error": [];
 	send: [];
+	upload: [files: File[]];
 }>();
 
 const host = ref<HTMLElement | null>(null);
@@ -79,10 +81,13 @@ function clipboardText(data: DataTransfer | null) {
 function insertTransferredText(event: ClipboardEvent | DragEvent) {
 	if (!editor) return;
 	const data = "clipboardData" in event ? event.clipboardData : event.dataTransfer;
-	const text = clipboardText(data);
+	const files = getClipboardFiles(data);
+	const text = files.length ? data?.getData("text/plain") : clipboardText(data);
 	event.preventDefault();
 	event.stopImmediatePropagation();
+	if (props.disabled) return;
 	if (text) editor.insertMD(text);
+	if (files.length) emit("upload", files);
 	queueMicrotask(syncValue);
 }
 

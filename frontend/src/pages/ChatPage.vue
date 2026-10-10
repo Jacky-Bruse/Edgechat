@@ -163,12 +163,12 @@ function handleRoomAccessRevoked(room) {
 }
 
 const {
-  messages, pinnedMessage, highlightedMessageId, loading, wsStatus, composerText, pendingAttachment, sending,
+  messages, pinnedMessage, highlightedMessageId, loading, wsStatus, composerText, pendingAttachments, sending,
   messagesEl, isOwnMessage,
 	  loadMessages, activateRoom, deactivateRoom, pauseRoom, disconnectSocket, sendMessage, sendVoiceMessage, deleteMessage,
 	  pinMessage, unpinMessage, revealPinnedMessage,
 	  revealMessage,
-  uploadAttachment, clearAttachment, loadOlder
+  uploadAttachment, clearAttachment, retryAttachment, loadOlder
 } = useChatRoom({
   activeRoom,
   session,
@@ -876,7 +876,7 @@ watch(
 		<MessageComposer
 		  ref="messageComposer"
 		  v-model="composerText"
-		  :pending-attachment="pendingAttachment"
+		  :pending-attachments="pendingAttachments"
 		  :sending="sending"
 			  :disabled="!activeRoom || activeDmBlockedByMe"
 			  :error="error"
@@ -888,6 +888,7 @@ watch(
 			  @cancel-reply="replyingTo = null"
 		  @upload="uploadAttachment"
 		  @clear-attachment="clearAttachment"
+		  @retry-attachment="retryAttachment"
 		/>
       </template>
 

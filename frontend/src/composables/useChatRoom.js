@@ -5,6 +5,7 @@ import { createRealtimeSession } from "../realtime-session.js";
 import { connectRoomSocket } from "../ws.js";
 import { t } from "../i18n.js";
 import { localizeErrorMessage } from "../localized-error.js";
+import { useAttachmentQueue } from "./useAttachmentQueue.js";
 
 const WS_CLOSE_UNAUTHORIZED = 4401;
 const WS_CLOSE_FORBIDDEN = 4403;
@@ -27,7 +28,10 @@ export function useChatRoom({
 	const loading = ref(false);
 	const wsStatus = ref("closed");
 	const composerText = ref("");
-	const pendingAttachment = ref(null);
+	const {
+		pendingAttachments, attachmentsReady, uploadAttachment, retryAttachment,
+		clearAttachment, clearAttachments, addReadyAttachment,
+	} = useAttachmentQueue((file) => roomApi.uploadFile(file));
 	const sending = ref(false);
 	const messagesEl = ref(null);
 	let messageLoadGeneration = 0;
@@ -259,43 +263,47 @@ export function useChatRoom({
 		roomSession.disconnect();
 	}
 
-		async function sendMessage(mentionUserIds = [], replyMessageId = null) {
-			const key = activeRoom.value
-				? `${activeRoom.value.kind}:${activeRoom.value.id}`
-				: "";
-			if (!roomSession.isOpenFor(key)) {
-				error.value = t('chat.realtimeNotReady');
-				return false;
-			}
-			if (!composerText.value.trim() && !pendingAttachment.value) {
-				return false;
-			}
+	async function sendMessage(mentionUserIds = [], replyMessageId = null) {
+		const key = roomKey();
+		if (!roomSession.isOpenFor(key)) {
+			error.value = t('chat.realtimeNotReady');
+			return false;
+		}
+		if (sending.value || !attachmentsReady.value ||
+			(!composerText.value.trim() && !pendingAttachments.value.length)) {
+			return false;
+		}
 
-			sending.value = true;
-			error.value = "";
-			try {
-				roomSession.send(
+		sending.value = true;
+		error.value = "";
+		try {
+			const entries = pendingAttachments.value.length ? [...pendingAttachments.value] : [null];
+			for (const [index, entry] of entries.entries()) {
+				const sent = roomSession.send(
 					JSON.stringify({
 						type: "send",
-						content: composerText.value,
-						attachment: pendingAttachment.value,
-						mentionUserIds,
+						content: index === 0 ? composerText.value : "",
+						attachment: entry?.attachment || null,
+						mentionUserIds: index === 0 ? mentionUserIds : [],
 						replyMessageId: replyMessageId ? Number(replyMessageId) : null,
 					}),
 					key,
 				);
+				if (!sent) throw new Error(t('chat.realtimeNotReady'));
 				composerText.value = "";
-				pendingAttachment.value = null;
-				return true;
-			} catch (currentError) {
-				error.value = currentError.message;
-				return false;
-			} finally {
-				sending.value = false;
+				if (entry) clearAttachment(entry.id);
 			}
+			return true;
+		} catch (currentError) {
+			error.value = currentError.message;
+			return false;
+		} finally {
+			sending.value = false;
 		}
+	}
 
 		async function sendVoiceMessage(recording, replyMessageId = null) {
+			if (sending.value) return false;
 			const key = roomKey();
 			if (!roomSession.isOpenFor(key)) {
 				error.value = t('chat.realtimeNotReady');
@@ -312,7 +320,7 @@ export function useChatRoom({
 					durationMs: recording.durationMs,
 					waveform: recording.waveform,
 				};
-				roomSession.send(
+				const sent = roomSession.send(
 					JSON.stringify({
 						type: "send",
 						content: "",
@@ -322,10 +330,13 @@ export function useChatRoom({
 					}),
 					key,
 				);
+				if (!sent) throw new Error(t('chat.realtimeNotReady'));
 				return true;
 			} catch (currentError) {
-				pendingAttachment.value = attachment;
-				error.value = currentError.message;
+				if (roomKey() === key) {
+					if (attachment) addReadyAttachment(attachment);
+					error.value = currentError.message;
+				}
 				return false;
 			} finally {
 				sending.value = false;
@@ -405,22 +416,7 @@ export function useChatRoom({
 		return revealMessage(pinnedMessage.value?.id);
 	}
 
-	async function uploadAttachment(file) {
-		if (!file) {
-			return;
-		}
-
-		try {
-			const payload = await roomApi.uploadFile(file);
-			pendingAttachment.value = payload.file;
-		} catch (currentError) {
-			error.value = currentError.message;
-		}
-	}
-
-	function clearAttachment() {
-		pendingAttachment.value = null;
-	}
+	watch(() => roomKey(), clearAttachments, { flush: "sync" });
 
 	async function loadOlder() {
 		if (loading.value) {
@@ -452,7 +448,7 @@ export function useChatRoom({
 		loading,
 		wsStatus,
 		composerText,
-		pendingAttachment,
+		pendingAttachments,
 		sending,
 		messagesEl,
 		isOwnMessage,
@@ -471,6 +467,7 @@ export function useChatRoom({
 			revealPinnedMessage,
 		uploadAttachment,
 		clearAttachment,
+		retryAttachment,
 		loadOlder,
 	};
 }
