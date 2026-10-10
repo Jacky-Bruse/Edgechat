@@ -68,7 +68,12 @@ async function submit() {
   loading.value = true;
   error.value = '';
   try {
-    await api.registerWithInvite(token.value, form);
+    // 确认密码只用于本地一致性校验，不能作为注册字段发送给后端。
+    await api.registerWithInvite(token.value, {
+      username: form.username,
+      displayName: form.displayName,
+      password: form.password
+    });
     router.push({ name: 'login', query: { registered: '1' } });
   } catch (currentError) {
     error.value = currentError.message;
@@ -95,7 +100,7 @@ onMounted(() => {
       <p v-else-if="invite?.note" class="info-text">{{ t('auth.invitationNote', { note: invite.note }) }}</p>
       <p v-if="error" class="error-text">{{ error }}</p>
 
-      <form v-if="invite && !error" class="login-form" @submit.prevent="submit">
+      <form v-if="invite" class="login-form" @submit.prevent="submit">
         <div class="input-wrapper">
           <span ref="usernameCursor" class="custom-cursor"></span>
           <input
