@@ -618,12 +618,15 @@ CREATE TABLE IF NOT EXISTS telegram_notification_users (
   pending_expires_at TEXT,
   dm_enabled INTEGER NOT NULL DEFAULT 1 CHECK (dm_enabled IN (0, 1)),
   mention_enabled INTEGER NOT NULL DEFAULT 1 CHECK (mention_enabled IN (0, 1)),
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  next_notification_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
 );
 
 CREATE TABLE IF NOT EXISTS telegram_notification_outbox (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sender_id INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT '',
   channel_id INTEGER NOT NULL,
   message_id INTEGER NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('dm', 'mention')),
@@ -636,6 +639,15 @@ CREATE TABLE IF NOT EXISTS telegram_notification_outbox (
 );
 
 CREATE INDEX IF NOT EXISTS idx_telegram_notification_due ON telegram_notification_outbox(status, next_attempt_at);
+CREATE INDEX IF NOT EXISTS idx_telegram_notification_sender ON telegram_notification_outbox(sender_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_telegram_notification_recipient ON telegram_notification_outbox(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_telegram_notification_created ON telegram_notification_outbox(created_at);
+CREATE INDEX IF NOT EXISTS idx_telegram_notification_message ON telegram_notification_outbox(channel_id, message_id);
+CREATE TABLE IF NOT EXISTS telegram_notification_gate (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  next_send_at TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'
+);
+INSERT OR IGNORE INTO telegram_notification_gate (id) VALUES (1);
 
 INSERT OR IGNORE INTO site_settings (setting_key, setting_value)
 VALUES ('site_name', 'Edgechat');

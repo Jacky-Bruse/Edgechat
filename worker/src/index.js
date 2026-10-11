@@ -35,6 +35,7 @@ import { registerLoginNetworkRoutes } from './api/login-network.ts';
 import { registerDmRoutes } from './api/dm.js';
 import { registerCallRoutes } from './api/calls.ts';
 import { VoiceCall } from './do/VoiceCall.ts';
+import { TelegramNotifications } from './do/TelegramNotifications.ts';
 import { registerMessageRoutes } from './api/messages.js';
 import { registerUploadRoutes } from './api/upload.js';
 import { registerUserBlockRoutes } from './api/user-blocks.ts';
@@ -363,4 +364,4 @@ export function shouldRunDailyGc(scheduledTime) {
   const time = new Date(scheduledTime);
   return time.getUTCHours() === 19 && time.getUTCMinutes() === 0;
 }
-export { ChannelRoom, Scheduler, UserInbox, InstanceBridge, VoiceCall };
+export { ChannelRoom, Scheduler, UserInbox, InstanceBridge, VoiceCall, TelegramNotifications };

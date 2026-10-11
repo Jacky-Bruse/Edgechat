@@ -2,9 +2,11 @@ const TELEGRAM_API_ROOT = "https://api.telegram.org";
 const TELEGRAM_FILE_ROOT = `${TELEGRAM_API_ROOT}/file`;
 
 export class TelegramApiError extends Error {
-	constructor(message) {
+	constructor(message, { status = 0, retryAfter = 0 } = {}) {
 		super(message);
 		this.name = "TelegramApiError";
+		this.status = status;
+		this.retryAfter = retryAfter;
 	}
 }
 
@@ -19,7 +21,10 @@ function validateBotToken(botToken) {
 async function parseTelegramResponse(response) {
 	const result = await response.json().catch(() => null);
 	if (!response.ok || !result?.ok) {
-		throw new TelegramApiError(result?.description || `Telegram API 请求失败：${response.status}`);
+		throw new TelegramApiError(result?.description || `Telegram API 请求失败：${response.status}`, {
+			status: result?.error_code || response.status,
+			retryAfter: Number(result?.parameters?.retry_after) || 0,
+		});
 	}
 	return result.result;
 }

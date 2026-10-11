@@ -233,6 +233,14 @@ export const D1_MIGRATIONS = [
       "trigger:protect_default_rbac_update", "trigger:protect_default_rbac_delete", "trigger:protect_default_rbac_permissions",
       "trigger:protect_super_rbac_assignment", "trigger:protect_last_super_update", "trigger:protect_last_super_delete"],
   },
+  {
+    id: "2026-10-11-telegram-notification-budgets",
+    file: "worker/migrations/2026-10-11-telegram-notification-budgets.sql",
+    artifacts: ["column:telegram_notification_users.next_notification_at", "column:telegram_notification_outbox.sender_id",
+      "column:telegram_notification_outbox.created_at", "table:telegram_notification_gate",
+      "index:idx_telegram_notification_sender", "index:idx_telegram_notification_recipient",
+      "index:idx_telegram_notification_created", "index:idx_telegram_notification_message"],
+  },
 ];
 
 // b3f6855 曾发布、0c13e8f 已撤回的迁移：仅识别历史 ledger，不要求新安装创建废弃表，也不删除旧数据。

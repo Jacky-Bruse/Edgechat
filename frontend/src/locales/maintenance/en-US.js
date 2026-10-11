@@ -1,4 +1,6 @@
 export default {
+  'maintenance.telegramNotifications': 'TelegramNotifications DO',
+  'maintenance.method.telegramNotifications': 'TELEGRAM_NOTIFICATIONS binding + internal health request',
   'maintenance.voiceCall': 'VoiceCall DO',
   'maintenance.method.voiceCall': 'VOICE_CALL binding + internal health request',
   "admin.nav.maintenance": "Installation & maintenance",

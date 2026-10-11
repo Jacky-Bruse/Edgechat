@@ -75,6 +75,14 @@ class_name = "VoiceCall"
 tag = "v4"
 new_sqlite_classes = ["VoiceCall"]
 
+[[durable_objects.bindings]]
+name = "TELEGRAM_NOTIFICATIONS"
+class_name = "TelegramNotifications"
+
+[[migrations]]
+tag = "v5"
+new_sqlite_classes = ["TelegramNotifications"]
+
 [assets]
 directory = "./frontend/dist"
 not_found_handling = "single-page-application"

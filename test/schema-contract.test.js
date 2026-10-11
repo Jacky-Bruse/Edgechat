@@ -106,6 +106,7 @@ test("full schema executes baseline migration plan into ledger and passes system
     CHANNEL_ROOM: namespace('ChannelRoom'), USER_INBOX: namespace('UserInbox'), SCHEDULER: namespace('Scheduler'),
     INSTANCE_BRIDGE: namespace('InstanceBridge'),
     VOICE_CALL: namespace('VoiceCall'),
+    TELEGRAM_NOTIFICATIONS: namespace('TelegramNotifications'),
     EDGECHAT_ENCRYPTION_KEYRING: 'presence-only'
   });
   assert.equal(result.status, 'ok');
@@ -149,7 +150,7 @@ test("demo maintenance report uses the generated manifest and matches the produc
   assert.equal(report.status, "ok");
   assert.equal(report.version, `v${project.version}`);
   assert.equal(report.expectedMigration, D1_MIGRATIONS.at(-1).id);
-  assert.deepEqual(report.checks.map((check) => check.id), ["d1", "schema", "sessions", "files", "channelRoom", "userInbox", "scheduler", "instanceBridge", "environment"]);
+  assert.deepEqual(report.checks.map((check) => check.id), ["d1", "schema", "sessions", "files", "channelRoom", "userInbox", "scheduler", "instanceBridge", "voiceCall", "telegramNotifications", "environment"]);
   assert.equal(report.checks.find((check) => check.id === "schema").schema.status, "ok");
 });
 
